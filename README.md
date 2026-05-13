@@ -14,7 +14,7 @@ Aprobar la materia y unificarlas
 - **Numero de control**: 23308060610564
 - **Correo Electronico**: 23308060610564@cetis61.edu.mx
 - **Foto**:  
-![netanyahu](c:\Users\angel\AppData\Local\Packages\5319275A.WhatsAppDesktop_cv1g1gvanyjgm\LocalState\sessions\B275333548D768F9B54AE5FC9C707F1DDBC61F88\transfers\2026-20\WhatsApp Image 2026-05-13 at 11.21.28 AM.jpeg)  
+![netanyahu](assets/netanyahu.jpeg)  
 ### Integrante 2:
 - **Nombre**: Ruiz Campos Andre Dacey
 - **Edad**: 18
@@ -22,4 +22,4 @@ Aprobar la materia y unificarlas
 - **Numero de control**: 23308060610332
 - **Correo Electronico**: 23308060610332@cetis61.edu.mx
 - **Foto**:  
-![andredingus](c:\Users\angel\AppData\Local\Packages\5319275A.WhatsAppDesktop_cv1g1gvanyjgm\LocalState\sessions\B275333548D768F9B54AE5FC9C707F1DDBC61F88\transfers\2026-20\WhatsApp Image 2026-05-13 at 11.21.46 AM.jpeg)
+![andredingus](assets/andredingus.jpeg)
