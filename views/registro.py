@@ -12,23 +12,45 @@ def RegistroView(page: ft.Page, auth_controller):
         page.update()
 
     s = dict(
-        border_radius=8, filled=True,
-        fill_color=ft.Colors.GREY_100,
-        border_color=ft.Colors.TRANSPARENT,
-        focused_border_color=ft.Colors.BLACK,
-        color=ft.Colors.BLACK,
-        label_style=ft.TextStyle(color=ft.Colors.GREY_600),
+        border_radius=10, filled=True,
+        fill_color="#1a1a1a",
+        border_color="#333333",
+        focused_border_color="#ffffff",
+        color=ft.Colors.WHITE,
+        cursor_color=ft.Colors.WHITE,
+        label_style=ft.TextStyle(color="#888888"),
     )
 
-    nombre   = ft.TextField(label="Nombre",   prefix_icon=ft.Icons.PERSON_OUTLINE, **s)
-    correo   = ft.TextField(label="Correo",   prefix_icon=ft.Icons.EMAIL_OUTLINED, **s)
-    contra   = ft.TextField(
+    fuerza_text = ft.Text("", size=11)
+
+    def evaluar_fuerza(e):
+        val = contra.value or ""
+        if len(val) == 0:
+            fuerza_text.value = ""
+        elif len(val) < 4:
+            fuerza_text.value = "Muy débil"
+            fuerza_text.color = "#ff4444"
+        elif len(val) < 6:
+            fuerza_text.value = "Débil"
+            fuerza_text.color = "#ff8800"
+        elif len(val) < 8:
+            fuerza_text.value = "Media"
+            fuerza_text.color = "#ffcc00"
+        else:
+            fuerza_text.value = "Fuerte 💪"
+            fuerza_text.color = "#1DB954"
+        page.update()
+
+    nombre = ft.TextField(label="Nombre", prefix_icon=ft.Icons.PERSON_OUTLINE, max_length=20, **s)
+    correo = ft.TextField(label="Correo", prefix_icon=ft.Icons.EMAIL_OUTLINED, **s)
+    contra = ft.TextField(
         label="Contraseña", prefix_icon=ft.Icons.LOCK_OUTLINE, password=True,
-        suffix=ft.IconButton(icon=ft.Icons.VISIBILITY_OUTLINED, icon_color=ft.Colors.GREY_600, on_click=ver_contra),
+        max_length=8, on_change=evaluar_fuerza,
+        suffix=ft.IconButton(icon=ft.Icons.VISIBILITY_OUTLINED, icon_color="#888888", on_click=ver_contra),
         **s,
     )
 
-    def registra(e):
+    async def registra(e):
         nombre.error_text = None
         correo.error_text = None
         contra.error_text = None
@@ -50,42 +72,48 @@ def RegistroView(page: ft.Page, auth_controller):
             return
         ok, msg = auth_controller.registrar(nombre.value, correo.value, contra.value)
         if ok:
-            page.go("/")
+            await page.push_route("/")
         else:
             mostrar_error(msg)
             page.update()
 
     return ft.View(
         route="/registro",
-        bgcolor=ft.Colors.BLACK,
+        bgcolor="#0a0a0a",
         vertical_alignment=ft.MainAxisAlignment.CENTER,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         controls=[
             ft.Container(
                 width=360,
-                padding=30,
+                padding=ft.Padding(left=32, right=32, top=40, bottom=40),
+                border_radius=16,
+                bgcolor="#111111",
+                border=ft.Border(left=ft.BorderSide(1, "#222222"), right=ft.BorderSide(1, "#222222"), top=ft.BorderSide(1, "#222222"), bottom=ft.BorderSide(1, "#222222")),
                 content=ft.Column(
                     tight=True,
-                    spacing=14,
+                    spacing=16,
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                     controls=[
-                        ft.Text("Crear una cuenta", size=22, weight="bold", color=ft.Colors.WHITE, font_family="Audiowide"),
-                        ft.Divider(height=4, color=ft.Colors.TRANSPARENT),
+                        ft.Text("Crear cuenta", size=26, color=ft.Colors.WHITE, font_family="Audiowide", weight="bold"),
+                        ft.Text("Únete a Tracker FM", size=13, color="#888888"),
+                        ft.Divider(height=8, color="#222222"),
                         nombre,
                         correo,
                         contra,
+                        fuerza_text,
+                        ft.Container(height=4),
                         ft.ElevatedButton(
                             "Registrarse",
-                            width=300, height=44,
-                            bgcolor=ft.Colors.BLACK,
-                            color=ft.Colors.WHITE,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8)),
+                            width=300, height=46,
+                            bgcolor=ft.Colors.WHITE,
+                            color=ft.Colors.BLACK,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
                             on_click=registra,
                         ),
                         ft.TextButton(
                             "¿Ya tienes cuenta? Inicia sesión",
-                            style=ft.ButtonStyle(color=ft.Colors.GREY_600),
-                            on_click=lambda _: page.go("/"),
+                            style=ft.ButtonStyle(color="#888888"),
+                            on_click=lambda _: page.run_task(page.push_route, "/"),
                         ),
                     ],
                 ),

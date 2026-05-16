@@ -8,4 +8,20 @@ dependencies = [
     "flet>=0.85.1",
     "mysql-connector-python",
     "bcrypt",
+    "spotipy>=2.26.0",
+    "pygame>=2.6.1",
+    "requests>=2.34.2",
 ]
+
+[project.scripts]
+app = "main:main"
+
+[tool.uv]
+package = false
+
+[tool.setuptools.packages.find]
+include = ["*"]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
