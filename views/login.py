@@ -86,6 +86,11 @@ def LoginView(page: ft.Page, auth_controller):
                             style=ft.ButtonStyle(color="#888888"),
                             on_click=lambda _: page.run_task(page.push_route, "/registro"),
                         ),
+                        ft.TextButton(
+                            "¿Olvidaste tu contraseña?",
+                            style=ft.ButtonStyle(color="#888888"),
+                            on_click=lambda _: page.run_task(page.push_route, "/recuperar"),
+                        ),
                     ],
                 ),
             )

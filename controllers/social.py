@@ -68,3 +68,56 @@ class SocialController:
         result = cursor.fetchall()
         conn.close()
         return result
+
+    def is_album_liked(self, user_id, album_id):
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT 1 FROM favorite_albums WHERE user_id=%s AND album_id=%s",
+                (user_id, album_id)
+            )
+            result = cursor.fetchone() is not None
+            conn.close()
+            return result
+        except Exception:
+            return False
+
+    def like_album(self, user_id, album_id, album_title, cover_url, artist_id, artist_name, release_date, total_tracks):
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            # insertar artista si no existe
+            if artist_id:
+                cursor.execute(
+                    "INSERT IGNORE INTO artists (id, name) VALUES (%s, %s)",
+                    (artist_id, artist_name)
+                )
+            # insertar album si no existe
+            cursor.execute(
+                "INSERT IGNORE INTO albums (id, artist_id, title, cover_url, release_date, total_tracks) VALUES (%s, %s, %s, %s, %s, %s)",
+                (album_id, artist_id or None, album_title, cover_url, release_date or None, total_tracks or None)
+            )
+            cursor.execute(
+                "INSERT IGNORE INTO favorite_albums (user_id, album_id) VALUES (%s, %s)",
+                (user_id, album_id)
+            )
+            conn.commit()
+            conn.close()
+            return True
+        except Exception:
+            return False
+
+    def unlike_album(self, user_id, album_id):
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute(
+                "DELETE FROM favorite_albums WHERE user_id=%s AND album_id=%s",
+                (user_id, album_id)
+            )
+            conn.commit()
+            conn.close()
+            return True
+        except Exception:
+            return False

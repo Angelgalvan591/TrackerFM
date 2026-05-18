@@ -4,15 +4,15 @@ import requests
 import threading
 import io
 from controllers.deezer import buscar_deezer
-from controllers.spotify import buscar as buscar_spotify
+from controllers.spotify import buscar as buscar_spotify, get_artist_full
 
 pygame.mixer.init()
-reproduciendo = [None]  # preview_url actual
+reproduciendo = [None]
 
 
 def BusquedaView(page: ft.Page):
 
-    resultados = ft.Column(spacing=10, scroll=ft.ScrollMode.AUTO)
+    resultados = ft.Column(spacing=12, scroll=ft.ScrollMode.AUTO)
     filtro = ["track"]
     tipos = ["track", "album", "artist"]
     labels = ["Canciones", "Álbumes", "Artistas"]
@@ -82,68 +82,170 @@ def BusquedaView(page: ft.Page):
                 page.update()
         threading.Thread(target=_play, daemon=True).start()
 
+    def ir_artista(artista_nombre, origen):
+        def _buscar():
+            res = buscar_spotify(artista_nombre, "artist")
+            if res:
+                data = get_artist_full(res[0]["id"])
+                page.artista_data = data if data else res[0]
+            else:
+                page.artista_data = {"name": artista_nombre, "images": [], "genres": [], "followers": {"total": 0}, "popularity": 0, "id": ""}
+            page.artista_origen = origen
+            page.run_task(page.push_route, "/perfil_artista")
+        threading.Thread(target=_buscar, daemon=True).start()
+
     def card_track(item):
-        artistas = item.get("artist", {}).get("name", "")
-        img = item.get("album", {}).get("cover_medium", "")
+        artista_nombre = item.get("artist", {}).get("name", "")
+        img_big = item.get("album", {}).get("cover_xl", "") or item.get("album", {}).get("cover_medium", "")
         preview = item.get("preview", "")
+
         play_btn = ft.IconButton(
             icon=ft.Icons.PLAY_CIRCLE_OUTLINE,
             icon_color="#1DB954",
             icon_size=28,
             disabled=not preview,
+            style=ft.ButtonStyle(bgcolor="#00000088"),
         )
         if preview:
             play_btn.on_click = lambda _, u=preview, b=play_btn: play_preview(u, b)
+
         return ft.Container(
-            padding=10, bgcolor="#1a1a1a", border_radius=10,
-            content=ft.Row(
-                spacing=12,
-                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            bgcolor="#1a1a1a",
+            border_radius=14,
+            clip_behavior=ft.ClipBehavior.HARD_EDGE,
+            expand=True,
+            content=ft.Column(
+                spacing=0,
                 controls=[
-                    ft.Image(src=img, width=48, height=48, border_radius=6, fit=ft.BoxFit.COVER) if img
-                    else ft.Container(width=48, height=48, bgcolor="#333333", border_radius=6),
-                    ft.Column(spacing=2, expand=True, controls=[
-                        ft.Text(item["title"], size=14, color=ft.Colors.WHITE, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
-                        ft.Text(artistas, size=12, color="#888888", max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
-                    ]),
-                    play_btn,
+                    ft.Stack(
+                        controls=[
+                            ft.Image(src=img_big, width=float("inf"), height=160, fit=ft.BoxFit.COVER, expand=True) if img_big
+                            else ft.Container(height=160, bgcolor="#333333", expand=True),
+                            ft.Container(
+                                alignment=ft.Alignment(1, 1),
+                                padding=6,
+                                content=play_btn,
+                            ),
+                        ],
+                    ),
+                    ft.Container(
+                        padding=ft.Padding(left=10, right=10, top=8, bottom=10),
+                        content=ft.Column(spacing=3, controls=[
+                            ft.Text(item["title"], size=13, color=ft.Colors.WHITE, weight="bold",
+                                    max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                            ft.GestureDetector(
+                                on_tap=lambda _, n=artista_nombre: ir_artista(n, "/busqueda"),
+                                content=ft.Text(artista_nombre, size=11, color="#1DB954",
+                                                max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                            ),
+                        ]),
+                    ),
                 ],
             ),
         )
 
     def card_album(item):
         artistas = ", ".join(a["name"] for a in item.get("artists", []))
+        primer_artista = item.get("artists", [{}])[0].get("name", "")
         img = (item.get("images") or [{}])[0].get("url", "")
-        import webbrowser
-        spotify_url = item.get("external_urls", {}).get("spotify", "")
-        return ft.Container(
-            padding=10, bgcolor="#1a1a1a", border_radius=10,
-            content=ft.Row(
-                spacing=12,
-                vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                controls=[
-                    ft.Image(src=img, width=48, height=48, border_radius=6, fit=ft.BoxFit.COVER) if img
-                    else ft.Container(width=48, height=48, bgcolor="#333333", border_radius=6),
-                    ft.Column(spacing=2, expand=True, controls=[
-                        ft.Text(item["name"], size=14, color=ft.Colors.WHITE, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
-                        ft.Text(artistas, size=12, color="#888888", max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
-                    ]),
-                ],
+        total_tracks = item.get("total_tracks", "")
+        year = (item.get("release_date") or "")[:4]
+
+        def abrir_album(_):
+            page.album_data = item
+            page.album_origen = "/busqueda"
+            page.run_task(page.push_route, "/vista_album")
+
+        return ft.GestureDetector(
+            on_tap=abrir_album,
+            content=ft.Container(
+                bgcolor="#1a1a1a",
+                border_radius=14,
+                clip_behavior=ft.ClipBehavior.HARD_EDGE,
+                expand=True,
+                content=ft.Column(
+                    spacing=0,
+                    controls=[
+                        ft.Image(src=img, height=160, fit=ft.BoxFit.COVER, expand=True) if img
+                        else ft.Container(height=160, bgcolor="#333333", expand=True,
+                                          content=ft.Icon(ft.Icons.ALBUM, color="#555555", size=48),
+                                          alignment=ft.Alignment(0, 0)),
+                        ft.Container(
+                            padding=ft.Padding(left=10, right=10, top=8, bottom=10),
+                            content=ft.Column(spacing=3, controls=[
+                                ft.Text(item["name"], size=13, color=ft.Colors.WHITE, weight="bold",
+                                        max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                                ft.GestureDetector(
+                                    on_tap=lambda _, n=primer_artista: ir_artista(n, "/busqueda"),
+                                    content=ft.Text(artistas, size=11, color="#1DB954",
+                                                    max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                                ),
+                                ft.Text(
+                                    f"{year}  ·  {total_tracks} canciones" if total_tracks else year,
+                                    size=10, color="#666666",
+                                ),
+                            ]),
+                        ),
+                    ],
+                ),
             ),
         )
 
     def card_artist(item):
         img = (item.get("images") or [{}])[0].get("url", "")
-        return ft.Container(
-            padding=10, bgcolor="#1a1a1a", border_radius=10,
-            content=ft.Row(
-                spacing=12,
-                vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                controls=[
-                    ft.Image(src=img, width=48, height=48, border_radius=24, fit=ft.BoxFit.COVER) if img
-                    else ft.Container(width=48, height=48, bgcolor="#333333", border_radius=24),
-                    ft.Text(item["name"], size=14, color=ft.Colors.WHITE, expand=True, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
-                ],
+        generos = item.get("genres", [])
+        seguidores = item.get("followers", {}).get("total", 0)
+
+        def abrir(_):
+            def _fetch():
+                data = get_artist_full(item["id"])
+                page.artista_data = data if data else item
+                page.artista_origen = "/busqueda"
+                page.run_task(page.push_route, "/perfil_artista")
+            threading.Thread(target=_fetch, daemon=True).start()
+
+        return ft.GestureDetector(
+            on_tap=abrir,
+            content=ft.Container(
+                bgcolor="#1a1a1a",
+                border_radius=14,
+                clip_behavior=ft.ClipBehavior.HARD_EDGE,
+                expand=True,
+                content=ft.Column(
+                    spacing=0,
+                    controls=[
+                        ft.Stack(
+                            controls=[
+                                ft.Image(src=img, height=160, fit=ft.BoxFit.COVER, expand=True) if img
+                                else ft.Container(height=160, bgcolor="#333333", expand=True,
+                                                  content=ft.Icon(ft.Icons.PERSON, color="#555555", size=56),
+                                                  alignment=ft.Alignment(0, 0)),
+                                ft.Container(
+                                    height=160,
+                                    gradient=ft.LinearGradient(
+                                        begin=ft.Alignment(0, 0),
+                                        end=ft.Alignment(0, 1),
+                                        colors=["transparent", "#000000cc"],
+                                    ),
+                                    expand=True,
+                                ),
+                            ],
+                        ),
+                        ft.Container(
+                            padding=ft.Padding(left=10, right=10, top=8, bottom=10),
+                            content=ft.Column(spacing=3, controls=[
+                                ft.Text(item["name"], size=13, color=ft.Colors.WHITE, weight="bold",
+                                        max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                                ft.Text(
+                                    generos[0].capitalize() if generos else "Artista",
+                                    size=11, color="#888888",
+                                    max_lines=1, overflow=ft.TextOverflow.ELLIPSIS,
+                                ),
+                                ft.Text(f"{seguidores:,} seguidores", size=10, color="#666666"),
+                            ]),
+                        ),
+                    ],
+                ),
             ),
         )
 
@@ -161,14 +263,25 @@ def BusquedaView(page: ft.Page):
         resultados.controls.clear()
         if not items:
             resultados.controls.append(ft.Text("Sin resultados", color="#888888"))
-        else:
-            for item in items:
-                if filtro[0] == "track":
-                    resultados.controls.append(card_track(item))
-                elif filtro[0] == "album":
-                    resultados.controls.append(card_album(item))
+        elif filtro[0] == "track":
+            for i in range(0, len(items), 2):
+                par = items[i:i + 2]
+                row_controls = [card_track(par[0])]
+                if len(par) == 2:
+                    row_controls.append(card_track(par[1]))
                 else:
-                    resultados.controls.append(card_artist(item))
+                    row_controls.append(ft.Container(expand=True))
+                resultados.controls.append(ft.Row(spacing=12, controls=row_controls))
+        else:
+            fn = card_album if filtro[0] == "album" else card_artist
+            for i in range(0, len(items), 2):
+                par = items[i:i + 2]
+                row_controls = [fn(par[0])]
+                if len(par) == 2:
+                    row_controls.append(fn(par[1]))
+                else:
+                    row_controls.append(ft.Container(expand=True))
+                resultados.controls.append(ft.Row(spacing=12, controls=row_controls))
         page.update()
 
     barra.on_submit = hacer_busqueda

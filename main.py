@@ -10,6 +10,9 @@ from views.perfil import PerfilView
 from views.busqueda import BusquedaView
 from views.usuarios import UsuariosView
 from views.perfil_publico import PerfilPublicoView
+from views.perfil_artista import PerfilArtistaView
+from views.vista_album import VistaAlbumView
+from views.recuperar import RecuperarView
 from controllers.auth import AuthController
 
 SESSION_FILE = os.path.join(os.path.dirname(__file__), ".session")
@@ -63,6 +66,12 @@ async def start(page: ft.Page):
             page.views.append(UsuariosView(page))
         elif page.route == "/perfil_publico":
             page.views.append(PerfilPublicoView(page))
+        elif page.route == "/perfil_artista":
+            page.views.append(PerfilArtistaView(page))
+        elif page.route == "/vista_album":
+            page.views.append(VistaAlbumView(page))
+        elif page.route == "/recuperar":
+            page.views.append(RecuperarView(page, auth_ctrl))
         else:
             page.views.append(LoginView(page, auth_ctrl))
         page.update()

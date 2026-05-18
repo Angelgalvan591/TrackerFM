@@ -1,5 +1,13 @@
 import bcrypt
+import random
+import smtplib
+import os
+from email.mime.text import MIMEText
+from datetime import datetime, timedelta
 from database.db import get_connection
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class AuthController:
@@ -33,3 +41,93 @@ class AuthController:
             return user, "Login correcto"
         except Exception as e:
             return None, str(e)
+
+    def _generar_codigo(self):
+        return str(random.randint(100000, 999999))
+
+    def _guardar_codigo(self, email, codigo):
+        conn = get_connection()
+        cursor = conn.cursor()
+        expira = datetime.now() + timedelta(minutes=10)
+        cursor.execute("DELETE FROM password_resets WHERE email = %s", (email,))
+        cursor.execute(
+            "INSERT INTO password_resets (email, codigo, expira_at) VALUES (%s, %s, %s)",
+            (email, codigo, expira)
+        )
+        conn.commit()
+        conn.close()
+
+    def enviar_codigo_correo(self, email):
+        try:
+            conn = get_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
+            if not cursor.fetchone():
+                conn.close()
+                return False, "No existe una cuenta con ese correo"
+            conn.close()
+            codigo = self._generar_codigo()
+            self._guardar_codigo(email, codigo)
+            msg = MIMEText(f"Tu codigo de recuperacion es: {codigo}\nExpira en 10 minutos.", "plain", "utf-8")
+            msg["Subject"] = "Recuperar contrasena - TrackerFM"
+            msg["From"] = os.getenv("MAIL_USER")
+            msg["To"] = email
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
+                s.login(os.getenv("MAIL_USER"), os.getenv("MAIL_PASS"))
+                s.send_message(msg)
+            return True, "Código enviado al correo"
+        except Exception as e:
+            return False, str(e)
+
+    def enviar_codigo_whatsapp(self, telefono, email):
+        try:
+            from twilio.rest import Client
+            conn = get_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
+            if not cursor.fetchone():
+                conn.close()
+                return False, "No existe una cuenta con ese correo"
+            conn.close()
+            codigo = self._generar_codigo()
+            self._guardar_codigo(email, codigo)
+            client = Client(os.getenv("TWILIO_SID"), os.getenv("TWILIO_TOKEN"))
+            client.messages.create(
+                body=f"Tu código de recuperación TrackerFM es: {codigo}. Expira en 10 min.",
+                from_=os.getenv("TWILIO_FROM"),
+                to=f"whatsapp:{telefono}"
+            )
+            return True, "Código enviado por WhatsApp"
+        except Exception as e:
+            return False, str(e)
+
+    def verificar_codigo(self, email, codigo):
+        try:
+            conn = get_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(
+                "SELECT * FROM password_resets WHERE email = %s AND codigo = %s",
+                (email, codigo)
+            )
+            row = cursor.fetchone()
+            conn.close()
+            if not row:
+                return False, "Código incorrecto"
+            if datetime.now() > row["expira_at"]:
+                return False, "El código expiró"
+            return True, "Código válido"
+        except Exception as e:
+            return False, str(e)
+
+    def cambiar_password(self, email, nueva_password):
+        try:
+            hashed = bcrypt.hashpw(nueva_password.encode(), bcrypt.gensalt()).decode()
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("UPDATE users SET password = %s WHERE email = %s", (hashed, email))
+            cursor.execute("DELETE FROM password_resets WHERE email = %s", (email,))
+            conn.commit()
+            conn.close()
+            return True, "Contraseña actualizada"
+        except Exception as e:
+            return False, str(e)

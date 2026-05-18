@@ -11,6 +11,8 @@ dependencies = [
     "spotipy>=2.26.0",
     "pygame>=2.6.1",
     "requests>=2.34.2",
+    "twilio>=9.0.0",
+    "python-dotenv>=1.0.0",
 ]
 
 [project.scripts]

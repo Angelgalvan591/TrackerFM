@@ -17,3 +17,41 @@ def buscar(query, tipo="track", limite=10):
             return res["artists"]["items"]
     except Exception:
         return []
+
+
+def get_artist_top_tracks(artist_id, market="US"):
+    try:
+        res = _sp.artist_top_tracks(artist_id, country=market)
+        return res.get("tracks", [])[:10]
+    except Exception:
+        return []
+
+
+def get_artist_albums(artist_id, limite=20):
+    try:
+        res = _sp.artist_albums(artist_id, album_type="album,single", limit=limite)
+        return res.get("items", [])
+    except Exception:
+        return []
+
+
+def get_artist_full(artist_id):
+    try:
+        return _sp.artist(artist_id)
+    except Exception:
+        return None
+
+
+def get_album_tracks(album_id):
+    try:
+        res = _sp.album_tracks(album_id, limit=50)
+        album = _sp.album(album_id)
+        tracks = res.get("items", [])
+        # inyectar imagen del album en cada track
+        img = (album.get("images") or [{}])[0].get("url", "")
+        for t in tracks:
+            t["_album_img"] = img
+            t["_album_name"] = album.get("name", "")
+        return tracks, album
+    except Exception:
+        return [], {}
