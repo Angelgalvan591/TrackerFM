@@ -68,20 +68,27 @@ class AuthController:
             conn.close()
             codigo = self._generar_codigo()
             self._guardar_codigo(email, codigo)
-            msg = MIMEText(f"Tu codigo de recuperacion es: {codigo}\nExpira en 10 minutos.", "plain", "utf-8")
+            load_dotenv(override=True)
+            mail_user = (os.getenv("MAIL_USER") or "").strip()
+            mail_pass = (os.getenv("MAIL_PASS") or "").strip().replace(" ", "")
+            if not mail_user or "tu_correo" in mail_user or not mail_pass:
+                return True, f"DEV:{codigo}"
+            msg = MIMEText(
+                f"Tu codigo de recuperacion de TrackerFM es:\n\n{codigo}\n\nExpira en 10 minutos.",
+                "plain", "utf-8"
+            )
             msg["Subject"] = "Recuperar contrasena - TrackerFM"
-            msg["From"] = os.getenv("MAIL_USER")
-            msg["To"] = email
-            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
-                s.login(os.getenv("MAIL_USER"), os.getenv("MAIL_PASS"))
+            msg["From"]    = mail_user
+            msg["To"]      = email
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as s:
+                s.login(mail_user, mail_pass)
                 s.send_message(msg)
-            return True, "Código enviado al correo"
+            return True, "Codigo enviado al correo"
         except Exception as e:
             return False, str(e)
 
     def enviar_codigo_whatsapp(self, telefono, email):
         try:
-            from twilio.rest import Client
             conn = get_connection()
             cursor = conn.cursor(dictionary=True)
             cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
@@ -91,15 +98,24 @@ class AuthController:
             conn.close()
             codigo = self._generar_codigo()
             self._guardar_codigo(email, codigo)
-            client = Client(os.getenv("TWILIO_SID"), os.getenv("TWILIO_TOKEN"))
-            client.messages.create(
-                body=f"Tu código de recuperación TrackerFM es: {codigo}. Expira en 10 min.",
-                from_=os.getenv("TWILIO_FROM"),
-                to=f"whatsapp:{telefono}"
-            )
-            return True, "Código enviado por WhatsApp"
+            sid   = os.getenv("TWILIO_SID", "")
+            token = os.getenv("TWILIO_TOKEN", "")
+            frm   = os.getenv("TWILIO_FROM", "")
+            if sid and token and frm:
+                from twilio.rest import Client
+                client = Client(sid, token)
+                # normalizar número
+                numero = telefono if telefono.startswith("+") else f"+{telefono}"
+                client.messages.create(
+                    body=f"Tu código de recuperación TrackerFM es: {codigo}. Expira en 10 min.",
+                    from_=frm,
+                    to=f"whatsapp:{numero}",
+                )
+                return True, "Código enviado por WhatsApp"
+            else:
+                return True, f"DEV:{codigo}"
         except Exception as e:
-            return False, str(e)
+            return False, f"Error WhatsApp: {str(e)}"
 
     def verificar_codigo(self, email, codigo):
         try:
