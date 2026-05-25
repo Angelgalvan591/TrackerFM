@@ -12,10 +12,10 @@ def LoginView(page: ft.Page, auth_controller):
         page.update()
 
     s = dict(
-        border_radius=10, filled=True,
-        fill_color="#1a1a1a",
-        border_color="#333333",
-        focused_border_color="#ffffff",
+        border_radius=12, filled=True,
+        fill_color="#1E212E",
+        border_color="transparent",
+        focused_border_color="#6C63FF",
         color=ft.Colors.WHITE,
         cursor_color=ft.Colors.WHITE,
         label_style=ft.TextStyle(color="#888888"),
@@ -52,7 +52,7 @@ def LoginView(page: ft.Page, auth_controller):
 
     return ft.View(
         route="/",
-        bgcolor="#0a0a0a",
+        bgcolor="#0F111A",
         vertical_alignment=ft.MainAxisAlignment.CENTER,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         controls=[
@@ -60,8 +60,7 @@ def LoginView(page: ft.Page, auth_controller):
                 width=360,
                 padding=ft.Padding(left=32, right=32, top=40, bottom=40),
                 border_radius=16,
-                bgcolor="#111111",
-                border=ft.Border(left=ft.BorderSide(1, "#222222"), right=ft.BorderSide(1, "#222222"), top=ft.BorderSide(1, "#222222"), bottom=ft.BorderSide(1, "#222222")),
+                bgcolor="#11131C",
                 content=ft.Column(
                     tight=True,
                     spacing=16,

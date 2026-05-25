@@ -62,12 +62,15 @@ def UsuariosView(page: ft.Page):
                 spacing=12,
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 controls=[
-                    ft.Container(
-                        width=42, height=42, border_radius=21,
-                        bgcolor="#222222",
+                    ft.Container( # Avatar display
+                        width=42, height=42, border_radius=21, bgcolor="#222222",
                         alignment=ft.Alignment(0, 0),
-                        content=ft.Text(inicial, size=18, color=ft.Colors.WHITE, font_family="Audiowide"),
+                        content=ft.Image(
+                            src=user.get("avatar_url"),
+                            width=42, height=42, border_radius=21, fit=ft.BoxFit.COVER
+                        ) if user.get("avatar_url") else ft.Text(inicial, size=18, color=ft.Colors.WHITE, font_family="Audiowide"),
                     ),
+                    
                     ft.Column(spacing=2, expand=True, controls=[
                         ft.Text(nombre, size=14, color=ft.Colors.WHITE),
                         ft.Text("@" + user["username"], size=12, color="#888888"),

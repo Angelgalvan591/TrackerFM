@@ -90,13 +90,17 @@ def PerfilPublicoView(page: ft.Page):
                         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                         spacing=8,
                         controls=[
-                            ft.Container(
-                                width=72, height=72, border_radius=36,
-                                bgcolor="#222222",
+                            ft.Container( # Avatar display
+                                width=72, height=72, border_radius=36, bgcolor="#222222",
                                 alignment=ft.Alignment(0, 0),
-                                content=ft.Text(inicial, size=28, color=ft.Colors.WHITE, font_family="Audiowide", weight="bold"),
+                                content=ft.Image(
+                                    src=user.get("avatar_url"),
+                                    width=72, height=72, border_radius=36, fit=ft.BoxFit.COVER
+                                ) if user.get("avatar_url") else ft.Text(inicial, size=28, color=ft.Colors.WHITE, font_family="Audiowide", weight="bold"),
                             ),
+                            
                             ft.Text(nombre, size=20, color=ft.Colors.WHITE, weight="bold"),
+                            
                             ft.Text("@" + user.get("username", ""), size=12, color="#888888"),
                             ft.Row(
                                 alignment=ft.MainAxisAlignment.CENTER,

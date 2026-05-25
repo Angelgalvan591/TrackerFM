@@ -37,11 +37,14 @@ async def start(page: ft.Page):
     page.window.width = 390
     page.window.height = 844
     page.window.resizable = False
+    page.window.title_bar_hidden = True
+    page.bgcolor = "#0F111A"
+    page.padding = 0
     page.fonts = {
         "Audiowide": "/Audiowide-Regular.ttf",
         "VT323": "/VT323-Regular.ttf",
     }
-    page.theme = ft.Theme(font_family="Audiowide")
+    page.theme = ft.Theme(font_family="Audiowide", color_scheme_seed="#6C63FF")
 
     auth_ctrl = AuthController()
     page.user_id = cargar_sesion()
@@ -88,7 +91,11 @@ async def start(page: ft.Page):
 
 
 def main():
-    ft.run(start, assets_dir="assets")
+    ft.run(
+        start,
+        assets_dir="assets",
+        view=ft.AppView.FLET_APP,
+    )
 
 
 if __name__ == "__main__":

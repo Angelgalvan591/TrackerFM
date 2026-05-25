@@ -299,6 +299,17 @@ CREATE TABLE `user_badges` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
+-- Estructura de tabla para la tabla `password_resets`
+--
+CREATE TABLE `password_resets` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `email` varchar(100) NOT NULL,
+  `codigo` varchar(6) NOT NULL,
+  `expira_at` timestamp NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+--
 -- Índices para tablas volcadas
 --
 

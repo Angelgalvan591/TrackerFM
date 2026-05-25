@@ -3,22 +3,21 @@ import pygame
 import requests
 import threading
 import io
-from controllers.spotify import get_album_tracks
 from controllers.social import SocialController
-from controllers.deezer import get_preview
+from controllers.deezer import get_album_details
 
 reproduciendo = [None]
 
 
 def VistaAlbumView(page: ft.Page):
     album    = getattr(page, "album_data", {})
-    album_id = album.get("id", "")
-    nombre   = album.get("name", "Álbum")
-    img      = (album.get("images") or [{}])[0].get("url", "")
-    artistas_list = album.get("artists", [])
+    album_id = album.get("id", "") # Keep album_id as is
+    nombre   = album.get("name", "Álbum") or album.get("title", "Álbum") # Prioritize 'name' (from Spotify-like structure) then 'title' (Deezer)
+    img      = (album.get("images", [{}])[0].get("url", "") or album.get("cover_xl") or album.get("cover_big") or album.get("cover_medium")) # Prioritize existing 'images' then Deezer covers
+    artistas_list = [{"name": album.get("artist", {}).get("name", ""), "id": album.get("artist", {}).get("id", "")}] if album.get("artist") else [] # Deezer has a single artist object
     artistas = ", ".join(a["name"] for a in artistas_list)
     year     = (album.get("release_date") or "")[:4]
-    total    = album.get("total_tracks", "")
+    total    = album.get("total_tracks", "") or album.get("nb_tracks", "") # Prioritize existing 'total_tracks' then Deezer 'nb_tracks'
     origen   = getattr(page, "album_origen", "/busqueda")
 
     social   = SocialController()
@@ -44,7 +43,7 @@ def VistaAlbumView(page: ft.Page):
             artist_id   = artistas_list[0].get("id", "") if artistas_list else ""
             artist_name = artistas_list[0].get("name", "") if artistas_list else ""
             cover_url   = img
-            release_date = year + "-01-01" if year else None
+            release_date = album.get("release_date") if album.get("release_date") else (year + "-01-01" if year else None) # Use actual release_date if available
             social.like_album(
                 page.user_id, album_id, nombre, cover_url,
                 artist_id, artist_name, release_date, total or None
@@ -61,7 +60,7 @@ def VistaAlbumView(page: ft.Page):
         ft.Container(
             alignment=ft.Alignment(0, 0),
             padding=ft.Padding(left=0, right=0, top=24, bottom=0),
-            content=ft.ProgressRing(width=28, height=28, stroke_width=2, color="#1DB954"),
+            content=ft.ProgressRing(width=28, height=28, stroke_width=2, color="#6C63FF"),
         )
     ])
 
@@ -92,29 +91,30 @@ def VistaAlbumView(page: ft.Page):
         threading.Thread(target=_play, daemon=True).start()
 
     def track_row(i, track):
-        preview      = track.get("preview_url", "")
-        duracion_ms  = track.get("duration_ms", 0)
-        mins         = duracion_ms // 60000
-        segs         = (duracion_ms % 60000) // 1000
-        artistas_t   = ", ".join(a["name"] for a in track.get("artists", []))
+        preview      = track.get("preview", "")
+        duracion_s   = track.get("duration", 0) # Deezer returns duration in seconds
+        mins         = duracion_s // 60
+        segs         = duracion_s % 60
+        artistas_t   = track.get("artist", {}).get("name", "") # Deezer track has single artist object
         play_btn     = ft.IconButton(
-            icon=ft.Icons.PLAY_CIRCLE_OUTLINE, icon_color="#1DB954", icon_size=24,
+            icon=ft.Icons.PLAY_CIRCLE_OUTLINE, icon_color="#6C63FF", icon_size=24,
             disabled=not preview,
         )
         if preview:
             play_btn.on_click = lambda _, u=preview, b=play_btn: play_preview(u, b)
         return ft.Container(
-            padding=ft.Padding(left=12, right=8, top=8, bottom=8),
-            border_radius=10, bgcolor="#1a1a1a",
+            padding=ft.Padding(left=10, right=8, top=8, bottom=8),
+            border_radius=10,
+            on_hover=lambda e: setattr(e.control, "bgcolor", "#1E212E" if e.data == "true" else None) or e.control.update(),
             content=ft.Row(spacing=10, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=[
-                ft.Text(str(i), size=12, color="#555555", width=22),
+                ft.Text(str(i), size=12, color="#777777", width=24, text_align=ft.TextAlign.CENTER),
                 ft.Column(spacing=2, expand=True, controls=[
-                    ft.Text(track["name"], size=13, color=ft.Colors.WHITE,
+                    ft.Text(track["title"], size=14, color=ft.Colors.WHITE, weight=ft.FontWeight.W_500,
                             max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
-                    ft.Text(artistas_t, size=11, color="#888888",
+                    ft.Text(artistas_t, size=12, color="#b3b3b3",
                             max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                 ]),
-                ft.Text(f"{mins}:{segs:02d}", size=11, color="#555555"),
+                ft.Text(f"{mins}:{segs:02d}", size=11, color="#777777"),
                 play_btn,
             ]),
         )
@@ -124,17 +124,13 @@ def VistaAlbumView(page: ft.Page):
             lista.controls = [ft.Text("ID de álbum no disponible", color="#666666", size=13)]
             page.update()
             return
-        tracks, _ = get_album_tracks(album_id)
+        album_details = get_album_details(album_id)
+        tracks = album_details.get("tracks", {}).get("data", [])
         if not tracks:
             lista.controls = [ft.Text("Sin canciones disponibles", color="#666666", size=13)]
             page.update()
             return
-        # buscar previews en Deezer para tracks sin preview de Spotify
-        primer_artista = artistas_list[0].get("name", "") if artistas_list else ""
-        for t in tracks:
-            if not t.get("preview_url"):
-                t_artista = t.get("artists", [{}])[0].get("name", "") or primer_artista
-                t["preview_url"] = get_preview(t["name"], t_artista)
+
         lista.controls = [track_row(i + 1, t) for i, t in enumerate(tracks)]
         page.update()
 
@@ -150,7 +146,7 @@ def VistaAlbumView(page: ft.Page):
             ft.Column(spacing=6, expand=True, controls=[
                 ft.Text(nombre, size=17, color=ft.Colors.WHITE, weight="bold",
                         max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
-                ft.Text(artistas, size=13, color="#1DB954",
+                ft.Text(artistas, size=13, color="#6C63FF",
                         max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                 ft.Text(f"{year}  ·  {total} canciones" if total else year,
                         size=11, color="#666666"),
@@ -160,11 +156,11 @@ def VistaAlbumView(page: ft.Page):
     )
 
     return ft.View(
-        route="/vista_album", bgcolor="#0a0a0a", padding=0,
+        route="/vista_album", bgcolor="#0F111A", padding=0,
         controls=[
             ft.Column(expand=True, spacing=0, controls=[
                 ft.Container(
-                    bgcolor="#0a0a0a",
+                    bgcolor="#0F111A",
                     padding=ft.Padding(left=8, right=0, top=12, bottom=0),
                     content=ft.IconButton(
                         icon=ft.Icons.ARROW_BACK, icon_color="#888888",

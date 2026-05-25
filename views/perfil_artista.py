@@ -3,36 +3,36 @@ import pygame
 import requests
 import threading
 import io
-from controllers.spotify import get_artist_top_tracks, get_artist_albums, get_artist_full
+from controllers.deezer import get_artist_top_tracks, get_artist_albums, get_artist_details
 
 reproduciendo = [None]
 
 
 def PerfilArtistaView(page: ft.Page):
     artista = getattr(page, "artista_data", {})
-    artist_id = artista.get("id", "")
     origen = getattr(page, "artista_origen", "/busqueda")
+    artist_id = artista.get("id", "") # Ensure artist_id is taken from the Deezer-compatible artista_data
 
     # placeholders que se llenan en background
-    nombre_ref   = [artista.get("name", "Artista")]
-    img_ref      = [(artista.get("images") or [{}])[0].get("url", "")]
-    seg_ref      = [artista.get("followers", {}).get("total", 0)]
-    pop_ref      = [artista.get("popularity", 0)]
-    generos_ref  = [artista.get("genres", [])]
+    nombre_ref   = [artista.get("name", "Artista")] # 'name' is consistent for Deezer artist search results
+    img_ref      = [artista.get("picture_medium", "")] # Use Deezer's picture_medium
+    seg_ref      = [artista.get("nb_fan", 0)] # Use Deezer's nb_fan
+    pop_ref      = [artista.get("rank", 0)] # Use Deezer's rank as a proxy, not 0-100
+    generos_ref  = [[g.get("name") for g in artista.get("genres", {}).get("data", [])] if artista.get("genres") else []] # Deezer genres are nested
 
     discografia_row = ft.Row(spacing=10, scroll=ft.ScrollMode.AUTO, controls=[
         ft.Container(width=60, height=130, alignment=ft.Alignment(0, 0),
-                     content=ft.ProgressRing(width=20, height=20, stroke_width=2, color="#1DB954"))
+                     content=ft.ProgressRing(width=20, height=20, stroke_width=2, color="#6C63FF"))
     ])
     tracks_col = ft.Column(spacing=8, controls=[
         ft.Container(padding=ft.Padding(left=0, right=0, top=8, bottom=0),
                      alignment=ft.Alignment(0, 0),
-                     content=ft.ProgressRing(width=20, height=20, stroke_width=2, color="#1DB954"))
+                     content=ft.ProgressRing(width=20, height=20, stroke_width=2, color="#6C63FF"))
     ])
 
     seg_text  = ft.Text(f"{seg_ref[0]:,} seguidores", size=12, color="#aaaaaa")
     pop_bar   = ft.ProgressBar(value=pop_ref[0] / 100 if pop_ref[0] else 0,
-                               bgcolor="#222222", color="#1DB954", height=4, border_radius=2)
+                               bgcolor="#222222", color="#6C63FF", height=4, border_radius=2)
     pop_label = ft.Text(f"{pop_ref[0]}/100", size=12, color="#888888")
     generos_wrap = ft.Row(wrap=True, spacing=6, controls=[])
 
@@ -64,24 +64,27 @@ def PerfilArtistaView(page: ft.Page):
 
     def track_row(i, track):
         preview   = track.get("preview_url", "")
-        track_img = (track.get("album", {}).get("images") or [{}])[0].get("url", "")
+        track_img = track.get("album", {}).get("cover_medium", "")
         play_btn  = ft.IconButton(
-            icon=ft.Icons.PLAY_CIRCLE_OUTLINE, icon_color="#1DB954", icon_size=24,
+            icon=ft.Icons.PLAY_CIRCLE_OUTLINE, icon_color="#6C63FF", icon_size=24,
             disabled=not preview,
         )
         if preview:
             play_btn.on_click = lambda _, u=preview, b=play_btn: play_preview(u, b)
+
         return ft.Container(
-            padding=ft.Padding(left=12, right=12, top=8, bottom=8),
-            border_radius=10, bgcolor="#1a1a1a",
+            padding=ft.Padding(left=12, right=8, top=10, bottom=10),
+            border_radius=16, bgcolor="#1E212E",
             content=ft.Row(spacing=12, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=[
-                ft.Text(str(i), size=13, color="#555555", width=18),
-                ft.Image(src=track_img, width=42, height=42, border_radius=6, fit=ft.BoxFit.COVER) if track_img
-                else ft.Container(width=42, height=42, bgcolor="#333333", border_radius=6),
+                ft.Text(str(i), size=12, color="#777777", width=20, text_align=ft.TextAlign.CENTER),
+                ft.Image(src=track_img, width=48, height=48, border_radius=6, fit=ft.BoxFit.COVER) if track_img
+                else ft.Container(width=48, height=48, bgcolor="#222222", border_radius=6,
+                                  content=ft.Icon(ft.Icons.MUSIC_NOTE, color="#444444", size=24),
+                                  alignment=ft.Alignment(0, 0)),
                 ft.Column(spacing=2, expand=True, controls=[
-                    ft.Text(track["name"], size=13, color=ft.Colors.WHITE,
+                    ft.Text(track.get("title", ""), size=14, color=ft.Colors.WHITE, weight=ft.FontWeight.W_500,
                             max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
-                    ft.Text(track.get("album", {}).get("name", ""), size=11, color="#888888",
+                    ft.Text(track.get("album", {}).get("title", ""), size=12, color="#b3b3b3",
                             max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                 ]),
                 play_btn,
@@ -89,29 +92,47 @@ def PerfilArtistaView(page: ft.Page):
         )
 
     def card_album(album):
-        alb_img = (album.get("images") or [{}])[0].get("url", "")
-        year    = (album.get("release_date") or "")[:4]
-        tipo    = album.get("album_type", "album").capitalize()
+        alb_img = album.get("cover_medium", "")
+        year    = (album.get("release_date") or album.get("release_date_start") or "")[:4]
+        tipo    = album.get("record_type", "album").capitalize()
 
         def abrir(_):
-            page.album_data   = album
-            page.album_origen = "/perfil_artista"
-            page.run_task(page.push_route, "/vista_album")
+            def _fetch_album_details():
+                full_album_data = get_album_details(album.get("id"))
+                if full_album_data:
+                    page.album_data = {
+                        "id": full_album_data.get("id"),
+                        "name": full_album_data.get("title"),
+                        "images": [{"url": full_album_data.get("cover_xl") or full_album_data.get("cover_big") or full_album_data.get("cover_medium")}] if full_album_data.get("cover_medium") else [],
+                        "artists": [{"name": full_album_data.get("artist", {}).get("name", "")}],
+                        "release_date": full_album_data.get("release_date"),
+                        "total_tracks": full_album_data.get("nb_tracks"),
+                    }
+                else:
+                    page.album_data = {
+                        "id": album.get("id"), "name": album.get("title"),
+                        "images": [{"url": album.get("cover_medium")}] if album.get("cover_medium") else [],
+                        "artists": [{"name": album.get("artist", {}).get("name", "")}],
+                        "release_date": album.get("release_date") or album.get("release_date_start"), "total_tracks": album.get("nb_tracks"),
+                    }
+                page.album_origen = "/perfil_artista"
+                page.run_task(page.push_route, "/vista_album")
+            threading.Thread(target=_fetch_album_details, daemon=True).start()
 
         return ft.GestureDetector(
             on_tap=abrir,
             content=ft.Container(
-                bgcolor="#1a1a1a", border_radius=12,
+                bgcolor="#1E212E", border_radius=16,
                 clip_behavior=ft.ClipBehavior.HARD_EDGE, width=130,
                 content=ft.Column(spacing=0, controls=[
                     ft.Image(src=alb_img, width=130, height=130, fit=ft.BoxFit.COVER) if alb_img
-                    else ft.Container(width=130, height=130, bgcolor="#333333",
-                                      content=ft.Icon(ft.Icons.ALBUM, color="#555555", size=40),
+                    else ft.Container(width=130, height=130, bgcolor="#222222",
+                                      content=ft.Icon(ft.Icons.ALBUM, color="#444444", size=40),
                                       alignment=ft.Alignment(0, 0)),
                     ft.Container(
                         padding=ft.Padding(left=8, right=8, top=6, bottom=8),
                         content=ft.Column(spacing=2, controls=[
-                            ft.Text(album["name"], size=12, color=ft.Colors.WHITE, weight="bold",
+                            ft.Text(album.get("title", ""), size=12, color=ft.Colors.WHITE, weight="bold",
                                     max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                             ft.Text(f"{tipo}  ·  {year}", size=10, color="#666666"),
                         ]),
@@ -123,21 +144,21 @@ def PerfilArtistaView(page: ft.Page):
     def cargar():
         # si el objeto no tiene followers reales, traer full
         data = artista
-        if artist_id and not artista.get("followers", {}).get("total"):
-            full = get_artist_full(artist_id)
+        if artist_id and not artista.get("nb_fan"): # Deezer uses nb_fan
+            full = get_artist_details(artist_id)
             if full:
                 data = full
 
-        seg_ref[0]     = data.get("followers", {}).get("total", 0)
-        pop_ref[0]     = data.get("popularity", 0)
-        generos_ref[0] = data.get("genres", [])
+        seg_ref[0]     = data.get("nb_fan", 0)
+        pop_ref[0]     = data.get("rank", 0) # Deezer rank is not 0-100
+        generos_ref[0] = [g.get("name") for g in data.get("genres", {}).get("data", [])] if data.get("genres") else []
 
         seg_text.value  = f"{seg_ref[0]:,} seguidores"
-        pop_bar.value   = pop_ref[0] / 100
-        pop_label.value = f"{pop_ref[0]}/100"
+        pop_bar.value   = 0 # No direct popularity equivalent, set to 0
+        pop_label.value = "N/A" # No direct popularity equivalent, set to N/A
         generos_wrap.controls = [
             ft.Container(
-                padding=ft.Padding(left=12, right=12, top=4, bottom=4),
+                padding=ft.Padding(left=14, right=14, top=6, bottom=6),
                 border_radius=20, bgcolor="#222222",
                 content=ft.Text(g, size=11, color="#cccccc"),
             ) for g in generos_ref[0][:6]
@@ -160,22 +181,24 @@ def PerfilArtistaView(page: ft.Page):
     nombre = nombre_ref[0]
 
     header = ft.Stack(
-        height=220,
+        height=280,
         controls=[
-            ft.Image(src=img, width=390, height=220, fit=ft.BoxFit.COVER) if img
-            else ft.Container(width=390, height=220, bgcolor="#1a1a1a"),
+            ft.Image(src=img, width=400, height=280, fit=ft.BoxFit.COVER) if img
+            else ft.Container(width=400, height=280, bgcolor="#1a1a1a",
+                              content=ft.Icon(ft.Icons.PERSON, color="#555555", size=80),
+                              alignment=ft.Alignment(0, 0)),
             ft.Container(
-                width=390, height=220,
+                width=400, height=280,
                 gradient=ft.LinearGradient(
                     begin=ft.Alignment(0, -1), end=ft.Alignment(0, 1),
-                    colors=["transparent", "#0a0a0a"],
+                    colors=["#00000066", "transparent", "#0F111A"],
                 ),
             ),
             ft.Container(
                 alignment=ft.Alignment(-1, 1),
-                padding=ft.Padding(left=20, right=20, top=0, bottom=16),
+                padding=ft.Padding(left=20, right=20, top=0, bottom=20),
                 content=ft.Column(spacing=4, controls=[
-                    ft.Text(nombre, size=26, color=ft.Colors.WHITE, weight="bold"),
+                    ft.Text(nombre, size=32, color=ft.Colors.WHITE, weight=ft.FontWeight.BOLD),
                     seg_text,
                 ]),
             ),
@@ -201,7 +224,7 @@ def PerfilArtistaView(page: ft.Page):
     )
 
     return ft.View(
-        route="/perfil_artista", bgcolor="#0a0a0a", padding=0,
+        route="/perfil_artista", bgcolor="#0F111A", padding=0,
         controls=[
             ft.Stack(expand=True, controls=[
                 ft.Column(scroll=ft.ScrollMode.AUTO, spacing=0, controls=[header, body]),

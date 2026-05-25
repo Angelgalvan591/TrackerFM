@@ -1,9 +1,12 @@
 import flet as ft
 import threading
+import random
 from database.db import get_connection
-from controllers.spotify import get_artist_full
-from controllers.spotify import buscar as buscar_spotify
+from controllers.deezer import buscar_deezer, get_album_details
 
+# --- CONFIGURACIÓN ESTÉTICA ---
+BG_COLOR = "#0F111A"
+ACCENT_COLOR = "#6C63FF" # Violeta eléctrico para el estilo Midnight Minimalist
 
 def _get_ultima_resena(user_id):
     try:
@@ -111,7 +114,7 @@ def HomeView(page: ft.Page):
     resena_slot = ft.Column(spacing=0, controls=[
         ft.Container(
             alignment=ft.Alignment(0, 0), height=80,
-            content=ft.ProgressRing(width=22, height=22, stroke_width=2, color="#1DB954"),
+            content=ft.ProgressRing(width=22, height=22, stroke_width=2, color=ACCENT_COLOR),
         )
     ])
 
@@ -121,15 +124,41 @@ def HomeView(page: ft.Page):
             estrellas = "★" * int(resena["rating"]) + "☆" * (5 - int(resena["rating"]))
 
             def abrir_album(_):
-                from controllers.spotify import buscar as sp_buscar
                 def _fetch():
-                    res = sp_buscar(f"{resena['album_title']} {resena.get('artist_name','')}", "album")
-                    page.album_data = res[0] if res else {
-                        "id": resena["album_id"], "name": resena["album_title"],
-                        "images": [{"url": resena["cover_url"]}] if resena.get("cover_url") else [],
-                        "artists": [{"name": resena.get("artist_name", "")}],
-                        "release_date": "", "total_tracks": "",
-                    }
+                    album_data = None
+                    if resena['album_id']:
+                        album_data = get_album_details(resena['album_id'])
+
+                    if album_data and album_data.get("id"):
+                        page.album_data = {
+                            "id": album_data.get("id"),
+                            "name": album_data.get("title"),
+                            "images": [{"url": album_data.get("cover_xl") or album_data.get("cover_big") or album_data.get("cover_medium")}] if album_data.get("cover_medium") else [],
+                            "artists": [{"name": album_data.get("artist", {}).get("name", "")}],
+                            "release_date": album_data.get("release_date"),
+                            "total_tracks": album_data.get("nb_tracks"),
+                        }
+                    else:
+                        res = buscar_deezer(f"{resena['album_title']} {resena.get('artist_name','')}", "album", limite=1)
+                        if res:
+                            deezer_album = res[0]
+                            page.album_data = {
+                                "id": deezer_album.get("id"),
+                                "name": deezer_album.get("title"),
+                                "images": [{"url": deezer_album.get("cover_xl") or deezer_album.get("cover_big") or deezer_album.get("cover_medium")}] if deezer_album.get("cover_medium") else [],
+                                "artists": [{"name": deezer_album.get("artist", {}).get("name", "")}],
+                                "release_date": deezer_album.get("release_date"),
+                                "total_tracks": deezer_album.get("nb_tracks"),
+                            }
+                        else:
+                            page.album_data = {
+                                "id": resena["album_id"],
+                                "name": resena["album_title"],
+                                "images": [{"url": resena["cover_url"]}] if resena.get("cover_url") else [],
+                                "artists": [{"name": resena.get("artist_name", "")}],
+                                "release_date": "",
+                                "total_tracks": "",
+                            }
                     page.album_origen = "/home"
                     page.run_task(page.push_route, "/vista_album")
                 threading.Thread(target=_fetch, daemon=True).start()
@@ -138,7 +167,7 @@ def HomeView(page: ft.Page):
                 ft.GestureDetector(
                     on_tap=abrir_album,
                     content=ft.Container(
-                        bgcolor="#1a1a1a", border_radius=14,
+                        bgcolor="#1E212E", border_radius=14,
                         padding=ft.Padding(left=14, right=14, top=14, bottom=14),
                         content=ft.Row(spacing=14, vertical_alignment=ft.CrossAxisAlignment.START, controls=[
                             ft.Image(src=resena["cover_url"], width=72, height=72, border_radius=8,
@@ -149,7 +178,7 @@ def HomeView(page: ft.Page):
                             ft.Column(spacing=4, expand=True, controls=[
                                 ft.Text(resena["album_title"], size=14, color=ft.Colors.WHITE,
                                         weight="bold", max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
-                                ft.Text(resena.get("artist_name", ""), size=12, color="#1DB954",
+                                ft.Text(resena.get("artist_name", ""), size=12, color=ACCENT_COLOR,
                                         max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                                 ft.Text(estrellas, size=14, color="#f5c518"),
                                 ft.Text(resena.get("review_text", ""), size=11, color="#aaaaaa",
@@ -162,7 +191,7 @@ def HomeView(page: ft.Page):
         else:
             resena_slot.controls = [
                 ft.Container(
-                    bgcolor="#1a1a1a", border_radius=14,
+                    bgcolor="#1E212E", border_radius=14,
                     padding=ft.Padding(left=16, right=16, top=20, bottom=20),
                     content=ft.Column(
                         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -173,7 +202,7 @@ def HomeView(page: ft.Page):
                                     size=12, color="#666666", text_align=ft.TextAlign.CENTER),
                             ft.TextButton(
                                 "Buscar álbumes",
-                                style=ft.ButtonStyle(color="#1DB954"),
+                                style=ft.ButtonStyle(color=ACCENT_COLOR),
                                 on_click=lambda _: ir("/busqueda"),
                             ),
                         ],
@@ -184,42 +213,85 @@ def HomeView(page: ft.Page):
 
     threading.Thread(target=cargar_resena, daemon=True).start()
 
+    # ── carrusel de álbumes (Tendencias) ───────────────────────────────────
+    carousel_row = ft.Row(spacing=15, scroll=ft.ScrollMode.AUTO)
+
+    def cargar_carousel():
+        items = buscar_deezer("hits 2024", "album", limite=8)
+        if items:
+            for alb in items:
+                def abrir_alb(e, a=alb):
+                    page.album_data = a
+                    page.album_origen = "/home"
+                    page.run_task(page.push_route, "/vista_album")
+
+                carousel_row.controls.append(
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Container(
+                                width=140, height=140, border_radius=10,
+                                image=ft.DecorationImage(
+                                    src=alb.get("cover_medium"),
+                                    fit=ft.BoxFit.COVER,
+                                ),
+                            ),
+                            ft.Text(alb.get("title", ""), size=11, weight="bold", color="white", max_lines=1, width=140)
+                        ], horizontal_alignment="center"),
+                        on_click=abrir_alb,
+                    )
+                )
+            page.update()
+
+    threading.Thread(target=cargar_carousel, daemon=True).start()
+
     # ── top bar ────────────────────────────────────────────────────────────
-    top_bar = ft.Row(
-        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-        vertical_alignment=ft.CrossAxisAlignment.CENTER,
-        controls=[
-            ft.IconButton(icon=ft.Icons.MENU, icon_color=ft.Colors.WHITE, on_click=abrir_sidebar),
-            ft.Text("TRACKER FM", size=16, color=ft.Colors.WHITE,
-                    font_family="Audiowide", weight="bold"),
-            ft.IconButton(icon=ft.Icons.SEARCH, icon_color="#888888",
-                          on_click=lambda _: page.run_task(page.push_route, "/busqueda")),
-        ],
+    top_bar = ft.Container(
+        padding=ft.Padding(bottom=5),
+        content=ft.Column([
+            ft.Row(
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                controls=[
+                    ft.IconButton(icon=ft.Icons.MENU_ROUNDED, icon_color="#888888", on_click=abrir_sidebar),
+                    ft.Text("TRACKER FM", size=18, color=ft.Colors.WHITE, font_family="Audiowide", weight="bold"),
+                    ft.IconButton(icon=ft.Icons.SEARCH_ROUNDED, icon_color="#888888",
+                                  on_click=lambda _: page.run_task(page.push_route, "/busqueda")),
+                ],
+            ),
+            ft.Divider(height=1, color="#222222")
+        ])
     )
 
     body = ft.Column(
-        expand=True, scroll=ft.ScrollMode.AUTO, spacing=20,
+        expand=True, scroll=ft.ScrollMode.AUTO, spacing=25,
         controls=[
-            ft.Text("Tu última reseña", size=15, color=ft.Colors.WHITE, weight="bold"),
-            resena_slot,
+            ft.Column([
+                ft.Text("Descubrir", size=22, color=ft.Colors.WHITE, weight="bold"),
+                carousel_row,
+            ], spacing=10),
+            ft.Column([
+                ft.Text("Tu actividad reciente", size=16, color="#888888", weight="w500"),
+                resena_slot,
+            ], spacing=10),
         ],
     )
 
     return ft.View(
-        route="/home", bgcolor="#0a0a0a", padding=0,
+        route="/home", bgcolor=BG_COLOR, padding=0,
         controls=[
             ft.Stack(expand=True, controls=[
                 ft.Column(expand=True, spacing=0, controls=[
                     ft.Container(
-                        padding=ft.Padding(left=16, right=16, top=20, bottom=12),
+                        padding=ft.Padding(left=20, right=20, top=20, bottom=10),
                         content=top_bar,
                     ),
                     ft.Container(
                         expand=True,
-                        padding=ft.Padding(left=16, right=16, top=0, bottom=16),
+                        padding=ft.Padding(left=20, right=20, top=10, bottom=20),
                         content=body,
                     ),
                 ]),
+                # Sidebar (Capa superior)
                 overlay,
                 ft.Row(expand=True, spacing=0, controls=[sidebar_panel]),
             ]),
