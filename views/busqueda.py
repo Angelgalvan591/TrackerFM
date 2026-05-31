@@ -279,7 +279,7 @@ def BusquedaView(page: ft.Page):
                                                   content=ft.Icon(ft.Icons.PERSON, color="#1C4F7A", size=56),
                                                   alignment=ft.Alignment(0, 0)),
                                 ft.Container(
-                                    height=140, expand=True,
+                                    height=140, width=400,
                                     gradient=ft.LinearGradient(
                                         begin=ft.Alignment(0, 0), end=ft.Alignment(0, 1),
                                         colors=["transparent", "#000000cc"],
