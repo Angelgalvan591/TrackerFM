@@ -350,10 +350,10 @@ def BusquedaView(page: ft.Page):
                 resultados.controls = new_controls
             except Exception as ex:
                 print(f"Error en búsqueda: {ex}")
-                    resultados.controls = [ft.Text("Ocurrió un error al buscar", color="#ff4444")]
+                resultados.controls = [ft.Text("Ocurrió un error al buscar", color="#ff4444")]
+            
             barra.disabled = False
-         f  da":
-                page.update() 
+            page.update()
         threading.Thread(target=_buscar, daemon=True).start()
 
     barra.on_submit = hacer_busqueda
