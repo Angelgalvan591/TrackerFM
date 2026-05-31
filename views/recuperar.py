@@ -7,13 +7,13 @@ def RecuperarView(page: ft.Page, auth_controller):
 
     s = dict(
         border_radius=15, filled=True,
-        fill_color="#1E212E", border_color="transparent",
-        focused_border_color="#6C63FF", color=ft.Colors.WHITE,
-        cursor_color=ft.Colors.WHITE, label_style=ft.TextStyle(color="#888888"),
+        fill_color="#122B46", border_color="transparent",
+        focused_border_color="#69A6FF", color=ft.Colors.WHITE,
+        cursor_color=ft.Colors.WHITE, label_style=ft.TextStyle(color="#A8B8CE"),
     )
 
     def notificar(texto):
-        page.overlay.append(ft.SnackBar(ft.Text(texto, color=ft.Colors.WHITE), bgcolor="#333333", open=True))
+        page.overlay.append(ft.SnackBar(ft.Text(texto, color=ft.Colors.WHITE), bgcolor="#0F1F33", open=True))
         page.update()
 
     def validar_email(valor):
@@ -44,11 +44,11 @@ def RecuperarView(page: ft.Page, auth_controller):
         tight=True, spacing=16,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         controls=[
-            ft.Icon(ft.Icons.LOCK_RESET_OUTLINED, color="#6C63FF", size=40),
+            ft.Icon(ft.Icons.LOCK_RESET_OUTLINED, color="#69A6FF", size=40),
             ft.Text("Recuperar contraseña", size=18, color=ft.Colors.WHITE,
                     font_family="Audiowide", text_align=ft.TextAlign.CENTER),
             ft.Text("Te enviaremos un código de 6 dígitos a tu correo",
-                    size=12, color="#888888", text_align=ft.TextAlign.CENTER),
+                    size=12, color="#A8B8CE", text_align=ft.TextAlign.CENTER),
             email_field,
             ft.ElevatedButton(
                 "Enviar código", width=300, height=46,
@@ -81,11 +81,11 @@ def RecuperarView(page: ft.Page, auth_controller):
         tight=True, spacing=16,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         controls=[
-            ft.Icon(ft.Icons.MARK_EMAIL_READ_OUTLINED, color="#6C63FF", size=40),
+            ft.Icon(ft.Icons.MARK_EMAIL_READ_OUTLINED, color="#69A6FF", size=40),
             ft.Text("Ingresa el código", size=18, color=ft.Colors.WHITE,
                     font_family="Audiowide", text_align=ft.TextAlign.CENTER),
             ft.Text("Revisa tu correo y escribe el código que recibiste",
-                    size=12, color="#888888", text_align=ft.TextAlign.CENTER),
+                    size=12, color="#A8B8CE", text_align=ft.TextAlign.CENTER),
             token_field,
             ft.ElevatedButton(
                 "Verificar", width=300, height=46,
@@ -122,10 +122,10 @@ def RecuperarView(page: ft.Page, auth_controller):
         tight=True, spacing=16,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         controls=[
-            ft.Icon(ft.Icons.CHECK_CIRCLE_OUTLINE, color="#6C63FF", size=40),
+            ft.Icon(ft.Icons.CHECK_CIRCLE_OUTLINE, color="#69A6FF", size=40),
             ft.Text("Nueva contraseña", size=18, color=ft.Colors.WHITE,
                     font_family="Audiowide", text_align=ft.TextAlign.CENTER),
-            ft.Text("Elige una contraseña segura", size=12, color="#888888"),
+            ft.Text("Elige una contraseña segura", size=12, color="#A8B8CE"),
             nueva_field,
             confirmar_field,
             ft.ElevatedButton(
@@ -146,17 +146,17 @@ def RecuperarView(page: ft.Page, auth_controller):
 
     return ft.View(
         route="/recuperar",
-        bgcolor="#0F111A",
+        bgcolor="#08131F",
         vertical_alignment=ft.MainAxisAlignment.CENTER,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         controls=[
             ft.Container(
                 width=360,
                 padding=ft.Padding(left=28, right=28, top=36, bottom=36),
-                border_radius=16, bgcolor="#111111",
+                border_radius=16, bgcolor="#0F1F33",
                 border=ft.Border(
-                    left=ft.BorderSide(1, "#222222"), right=ft.BorderSide(1, "#222222"),
-                    top=ft.BorderSide(1, "#222222"),  bottom=ft.BorderSide(1, "#222222"),
+                    left=ft.BorderSide(1, "#122B46"), right=ft.BorderSide(1, "#122B46"),
+                    top=ft.BorderSide(1, "#122B46"),  bottom=ft.BorderSide(1, "#122B46"),
                 ),
                 content=ft.Column(
                     ref=contenido,
@@ -166,7 +166,7 @@ def RecuperarView(page: ft.Page, auth_controller):
                         ft.Row(
                             controls=[
                                 ft.IconButton(
-                                    icon=ft.Icons.ARROW_BACK, icon_color="#888888",
+                                    icon=ft.Icons.ARROW_BACK, icon_color="#A8B8CE",
                                     on_click=lambda _: page.run_task(page.push_route, "/"),
                                 ),
                             ],

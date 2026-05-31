@@ -2,6 +2,7 @@ import flet as ft
 
 
 def LoginView(page: ft.Page, auth_controller):
+    ACCENT = "#69A6FF"
 
     def ver_contra(e):
         contra.password = not contra.password
@@ -13,18 +14,18 @@ def LoginView(page: ft.Page, auth_controller):
 
     s = dict(
         border_radius=12, filled=True,
-        fill_color="#1E212E",
+        fill_color="#122B46",
         border_color="transparent",
-        focused_border_color="#6C63FF",
+        focused_border_color=ACCENT,
         color=ft.Colors.WHITE,
         cursor_color=ft.Colors.WHITE,
-        label_style=ft.TextStyle(color="#888888"),
+        label_style=ft.TextStyle(color="#A8B8CE"),
     )
 
     correo = ft.TextField(label="Correo", prefix_icon=ft.Icons.EMAIL_OUTLINED, **s)
     contra = ft.TextField(
         label="Contraseña", prefix_icon=ft.Icons.LOCK_OUTLINE, password=True,
-        suffix=ft.IconButton(icon=ft.Icons.VISIBILITY_OUTLINED, icon_color="#888888", on_click=ver_contra),
+        suffix=ft.IconButton(icon=ft.Icons.VISIBILITY_OUTLINED, icon_color="#A8B8CE", on_click=ver_contra),
         **s,
     )
 
@@ -52,7 +53,7 @@ def LoginView(page: ft.Page, auth_controller):
 
     return ft.View(
         route="/",
-        bgcolor="#0F111A",
+        bgcolor="#08131F",
         vertical_alignment=ft.MainAxisAlignment.CENTER,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         controls=[
@@ -60,15 +61,15 @@ def LoginView(page: ft.Page, auth_controller):
                 width=360,
                 padding=ft.Padding(left=32, right=32, top=40, bottom=40),
                 border_radius=16,
-                bgcolor="#11131C",
+                bgcolor="#10243C",
                 content=ft.Column(
                     tight=True,
                     spacing=16,
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                     controls=[
                         ft.Text("TRACKER FM", size=26, color=ft.Colors.WHITE, font_family="Audiowide", weight="bold"),
-                        ft.Text("Inicia sesión", size=13, color="#888888"),
-                        ft.Divider(height=8, color="#222222"),
+                        ft.Text("Inicia sesión", size=13, color="#A8B8CE"),
+                        ft.Divider(height=8, color="#122B46"),
                         correo,
                         contra,
                         ft.Container(height=4),
@@ -82,12 +83,12 @@ def LoginView(page: ft.Page, auth_controller):
                         ),
                         ft.TextButton(
                             "¿Sin cuenta? Regístrate",
-                            style=ft.ButtonStyle(color="#888888"),
+                            style=ft.ButtonStyle(color="#A8B8CE"),
                             on_click=lambda _: page.run_task(page.push_route, "/registro"),
                         ),
                         ft.TextButton(
                             "¿Olvidaste tu contraseña?",
-                            style=ft.ButtonStyle(color="#888888"),
+                            style=ft.ButtonStyle(color="#A8B8CE"),
                             on_click=lambda _: page.run_task(page.push_route, "/recuperar"),
                         ),
                     ],

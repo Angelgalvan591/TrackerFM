@@ -14,7 +14,7 @@ def SplashView(page: ft.Page):
 
     return ft.View(
         route="/splash",
-        bgcolor="#0a0a0a",
+        bgcolor="#08131F",
         vertical_alignment=ft.MainAxisAlignment.CENTER,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         controls=[
@@ -23,9 +23,9 @@ def SplashView(page: ft.Page):
                 spacing=6,
                 controls=[
                     ft.Text("TRACKER", size=48, color=ft.Colors.WHITE, font_family="Audiowide", weight="bold"),
-                    ft.Text("FM", size=20, color="#b3b3b3", font_family="Audiowide"),
+                    ft.Text("FM", size=20, color="#C1CFEB", font_family="Audiowide"),
                     ft.Container(height=30),
-                    ft.ProgressRing(width=20, height=20, stroke_width=2, color="#b3b3b3"),
+                    ft.ProgressRing(width=20, height=20, stroke_width=2, color="#C1CFEB"),
                 ],
             )
         ],

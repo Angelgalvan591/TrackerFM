@@ -5,8 +5,8 @@ from database.db import get_connection
 from controllers.deezer import buscar_deezer, get_album_details
 
 # --- CONFIGURACIÓN ESTÉTICA ---
-BG_COLOR = "#0F111A"
-ACCENT_COLOR = "#6C63FF" # Violeta eléctrico para el estilo Midnight Minimalist
+BG_COLOR = "#08131F"
+ACCENT_COLOR = "#69A6FF" # Violeta eléctrico para el estilo Midnight Minimalist
 
 def _get_ultima_resena(user_id):
     try:
@@ -41,7 +41,7 @@ def HomeView(page: ft.Page):
         page.borrar_sesion()
         await page.push_route("/")
 
-    # ── sidebar ────────────────────────────────────────────────────────────
+    # ── LÓGICA DE LA SIDEBAR UNIFICADA ─────────────────────────────────────
     overlay = ft.GestureDetector(
         visible=False, expand=True,
         on_tap=lambda _: cerrar_sidebar(None),
@@ -51,8 +51,8 @@ def HomeView(page: ft.Page):
     def nav_item(icon, label, ruta):
         return ft.TextButton(
             content=ft.Row(spacing=14, controls=[
-                ft.Icon(icon, color="#cccccc", size=20),
-                ft.Text(label, size=14, color="#cccccc"),
+                ft.Icon(icon, color="#D5E0F5", size=20),
+                ft.Text(label, size=14, color="#D5E0F5"),
             ]),
             style=ft.ButtonStyle(
                 overlay_color="#ffffff11",
@@ -63,10 +63,10 @@ def HomeView(page: ft.Page):
         )
 
     sidebar_panel = ft.Container(
-        visible=False, width=240, bgcolor="#111111",
+        visible=False, width=260, bgcolor="#0F1F33",
         content=ft.Column(spacing=0, controls=[
             ft.Container(
-                height=100, bgcolor="#1a1a1a",
+                height=100, bgcolor="#10243C",
                 padding=ft.Padding(left=20, right=20, top=40, bottom=16),
                 content=ft.Text("TRACKER FM", size=16, color=ft.Colors.WHITE,
                                 font_family="Audiowide", weight="bold"),
@@ -74,11 +74,12 @@ def HomeView(page: ft.Page):
             ft.Container(height=8),
             ft.Container(
                 padding=ft.Padding(left=12, right=12, top=0, bottom=0),
-                content=ft.Column(spacing=4, controls=[
-                    nav_item(ft.Icons.HOME_OUTLINED,  "Inicio",    "/home"),
-                    nav_item(ft.Icons.SEARCH,         "Buscar",    "/busqueda"),
+                content=ft.Column(spacing=2, controls=[
+                    nav_item(ft.Icons.HOME_OUTLINED,  "Home",    "/home"),
+                    nav_item(ft.Icons.SEARCH,         "Buscar",  "/busqueda"),
                     nav_item(ft.Icons.PEOPLE_OUTLINE, "Usuarios",  "/usuarios"),
-                    nav_item(ft.Icons.PERSON_OUTLINE, "Mi perfil", "/perfil"),
+                    nav_item(ft.Icons.HISTORY_ROUNDED, "Mi Actividad", "/actividad"),
+                    nav_item(ft.Icons.PERSON_OUTLINE, "Mi Perfil", "/perfil"),
                 ]),
             ),
             ft.Container(expand=True),
@@ -86,8 +87,8 @@ def HomeView(page: ft.Page):
                 padding=ft.Padding(left=12, right=12, top=0, bottom=24),
                 content=ft.TextButton(
                     content=ft.Row(spacing=14, controls=[
-                        ft.Icon(ft.Icons.LOGOUT, color="#888888", size=20),
-                        ft.Text("Cerrar sesión", size=14, color="#888888"),
+                        ft.Icon(ft.Icons.LOGOUT, color="#A8B8CE", size=20),
+                        ft.Text("Cerrar sesión", size=14, color="#A8B8CE"),
                     ]),
                     style=ft.ButtonStyle(
                         overlay_color="#ffffff11",
@@ -167,21 +168,21 @@ def HomeView(page: ft.Page):
                 ft.GestureDetector(
                     on_tap=abrir_album,
                     content=ft.Container(
-                        bgcolor="#1E212E", border_radius=14,
+                        bgcolor="#122B46", border_radius=14,
                         padding=ft.Padding(left=14, right=14, top=14, bottom=14),
                         content=ft.Row(spacing=14, vertical_alignment=ft.CrossAxisAlignment.START, controls=[
                             ft.Image(src=resena["cover_url"], width=72, height=72, border_radius=8,
                                      fit=ft.BoxFit.COVER) if resena.get("cover_url")
-                            else ft.Container(width=72, height=72, bgcolor="#333333", border_radius=8,
-                                              content=ft.Icon(ft.Icons.ALBUM, color="#555555", size=28),
+                            else ft.Container(width=72, height=72, bgcolor="#0F1F33", border_radius=8,
+                                              content=ft.Icon(ft.Icons.ALBUM, color="#2B5F81", size=28),
                                               alignment=ft.Alignment(0, 0)),
                             ft.Column(spacing=4, expand=True, controls=[
                                 ft.Text(resena["album_title"], size=14, color=ft.Colors.WHITE,
                                         weight="bold", max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                                 ft.Text(resena.get("artist_name", ""), size=12, color=ACCENT_COLOR,
                                         max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
-                                ft.Text(estrellas, size=14, color="#f5c518"),
-                                ft.Text(resena.get("review_text", ""), size=11, color="#aaaaaa",
+                                ft.Text(estrellas, size=14, color="#FFC542"),
+                                ft.Text(resena.get("review_text", ""), size=11, color="#B2C0D9",
                                         max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
                             ]),
                         ]),
@@ -191,15 +192,15 @@ def HomeView(page: ft.Page):
         else:
             resena_slot.controls = [
                 ft.Container(
-                    bgcolor="#1E212E", border_radius=14,
+                    bgcolor="#122B46", border_radius=14,
                     padding=ft.Padding(left=16, right=16, top=20, bottom=20),
                     content=ft.Column(
                         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                         spacing=8,
                         controls=[
-                            ft.Icon(ft.Icons.RATE_REVIEW_OUTLINED, color="#444444", size=36),
+                            ft.Icon(ft.Icons.RATE_REVIEW_OUTLINED, color="#1C4F7A", size=36),
                             ft.Text("Aún no has reseñado ningún álbum",
-                                    size=12, color="#666666", text_align=ft.TextAlign.CENTER),
+                                    size=12, color="#6B7A8F", text_align=ft.TextAlign.CENTER),
                             ft.TextButton(
                                 "Buscar álbumes",
                                 style=ft.ButtonStyle(color=ACCENT_COLOR),
@@ -252,13 +253,13 @@ def HomeView(page: ft.Page):
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 controls=[
-                    ft.IconButton(icon=ft.Icons.MENU_ROUNDED, icon_color="#888888", on_click=abrir_sidebar),
+                    ft.IconButton(icon=ft.Icons.MENU_ROUNDED, icon_color="#A8B8CE", on_click=abrir_sidebar),
                     ft.Text("TRACKER FM", size=18, color=ft.Colors.WHITE, font_family="Audiowide", weight="bold"),
-                    ft.IconButton(icon=ft.Icons.SEARCH_ROUNDED, icon_color="#888888",
+                    ft.IconButton(icon=ft.Icons.SEARCH_ROUNDED, icon_color="#A8B8CE",
                                   on_click=lambda _: page.run_task(page.push_route, "/busqueda")),
                 ],
             ),
-            ft.Divider(height=1, color="#222222")
+            ft.Divider(height=1, color="#122B46")
         ])
     )
 
@@ -270,7 +271,7 @@ def HomeView(page: ft.Page):
                 carousel_row,
             ], spacing=10),
             ft.Column([
-                ft.Text("Tu actividad reciente", size=16, color="#888888", weight="w500"),
+                ft.Text("Tu actividad reciente", size=16, color="#A8B8CE", weight="w500"),
                 resena_slot,
             ], spacing=10),
         ],

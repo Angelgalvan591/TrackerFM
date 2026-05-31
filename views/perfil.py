@@ -14,10 +14,10 @@ GENEROS = [
 
 def PerfilView(page: ft.Page, auth_controller):
     def ir(ruta): page.run_task(page.push_route, ruta)
-    ACCENT_VIOLET = "#7C3AED"
-    ACCENT_CYAN = "#06B6D4"
+    ACCENT_VIOLET = "#6A98FF"
+    ACCENT_CYAN = "#64D9FF"
     BG_COLOR = "#0B1020"
-    CARD_BG = "#111827"
+    CARD_BG = "#10294E"
 
     user = {}
     try:
@@ -36,28 +36,56 @@ def PerfilView(page: ft.Page, auth_controller):
     seguidores     = social.get_seguidores(page.user_id)
     siguiendo_list = social.get_siguiendo(page.user_id)
 
-    # ── SIDEBAR ──────────────────────────────────────────────────────
-    sidebar = ft.Container(
-        width=260, bgcolor="#080C16", padding=30,
-        content=ft.Column([
-            ft.Text("TRACKER FM", size=22, font_family="Audiowide", color=ACCENT_CYAN, weight="bold"),
-            ft.Container(height=40),
-            ft.Column([
-                ft.ListTile(leading=ft.Icon(ft.Icons.GRID_VIEW_ROUNDED, color="#555577"), title=ft.Text("Inicio", color="#555577"), on_click=lambda _: ir("/home")),
-                ft.ListTile(leading=ft.Icon(ft.Icons.SEARCH_ROUNDED, color="#555577"), title=ft.Text("Buscar", color="#555577"), on_click=lambda _: ir("/busqueda")),
-                ft.ListTile(leading=ft.Icon(ft.Icons.LIBRARY_MUSIC_OUTLINED, color="#555577"), title=ft.Text("Biblioteca", color="#555577")),
-                ft.ListTile(leading=ft.Icon(ft.Icons.PEOPLE_OUTLINE, color="#555577"), title=ft.Text("Usuarios", color="#555577"), on_click=lambda _: ir("/usuarios")),
-                ft.ListTile(leading=ft.Icon(ft.Icons.SETTINGS_OUTLINED, color=ACCENT_VIOLET), title=ft.Text("Ajustes", color="white")),
-            ], spacing=10),
-        ])
+    # ── LÓGICA DE LA SIDEBAR UNIFICADA (Overlay) ──────────────────────
+    overlay = ft.GestureDetector(
+        visible=False, expand=True,
+        on_tap=lambda _: cerrar_sidebar(None),
+        content=ft.Container(expand=True, bgcolor="#00000099"),
+    )
+
+    def nav_item(icon, label, ruta):
+        return ft.TextButton(
+            content=ft.Row(spacing=14, controls=[
+                ft.Icon(icon, color="#D5E0F5", size=20),
+                ft.Text(label, size=14, color="#D5E0F5"),
+            ]),
+            style=ft.ButtonStyle(
+                overlay_color="#ffffff11",
+                shape=ft.RoundedRectangleBorder(radius=10),
+                padding=ft.Padding(left=16, right=16, top=12, bottom=12),
+            ),
+            on_click=lambda _, r=ruta: ir(r),
+        )
+
+    sidebar_panel = ft.Container(
+        visible=False, width=260, bgcolor="#0F1F33",
+        content=ft.Column(spacing=0, controls=[
+            ft.Container(
+                height=100, bgcolor="#10243C",
+                padding=ft.Padding(left=20, right=20, top=40, bottom=16),
+                content=ft.Text("TRACKER FM", size=16, color=ft.Colors.WHITE,
+                                font_family="Audiowide", weight="bold"),
+            ),
+            ft.Container(height=8),
+            ft.Container(
+                padding=ft.Padding(left=12, right=12, top=0, bottom=0),
+                content=ft.Column(spacing=2, controls=[
+                    nav_item(ft.Icons.HOME_OUTLINED,  "Home",    "/home"),
+                    nav_item(ft.Icons.SEARCH,         "Buscar",  "/busqueda"),
+                    nav_item(ft.Icons.PEOPLE_OUTLINE, "Usuarios",  "/usuarios"),
+                    nav_item(ft.Icons.HISTORY_ROUNDED, "Mi Actividad", "/actividad"),
+                    nav_item(ft.Icons.PERSON_OUTLINE, "Mi Perfil", "/perfil"),
+                ]),
+            ),
+        ]),
     )
 
     s = dict(
         border_radius=15,
         filled=True,
-        fill_color=CARD_BG, border_color="#1A2133",
+        fill_color=CARD_BG, border_color="#0F274A",
         focused_border_color=ACCENT_VIOLET, color=ft.Colors.WHITE,
-        cursor_color=ft.Colors.WHITE, label_style=ft.TextStyle(color="#888888"),
+        cursor_color=ft.Colors.WHITE, label_style=ft.TextStyle(color="#A8B8CE"),
     )
 
     f_display = ft.TextField(label="Nombre visible", value=user.get("display_name", "") or "", **s)
@@ -116,12 +144,12 @@ def PerfilView(page: ft.Page, auth_controller):
                     ft.GestureDetector(
                         on_tap=seleccionar,
                         content=ft.Container(
-                            bgcolor="#222222", border_radius=10,
+                            bgcolor="#122B46", border_radius=10,
                             padding=ft.Padding(left=10, right=10, top=8, bottom=8),
                             content=ft.Row(spacing=10, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=[
                                 ft.Image(src=img, width=36, height=36, border_radius=18,
                                          fit=ft.BoxFit.COVER) if img
-                                else ft.Container(width=36, height=36, bgcolor="#333333", border_radius=18),
+                                else ft.Container(width=36, height=36, bgcolor="#0F1F33", border_radius=18),
                                 ft.Text(nombre_a, size=13, color=ft.Colors.WHITE,
                                         max_lines=1, overflow=ft.TextOverflow.ELLIPSIS, expand=True
                                 ),
@@ -166,9 +194,9 @@ def PerfilView(page: ft.Page, auth_controller):
                     content=ft.Container(
                         padding=ft.Padding(left=12, right=12, top=6, bottom=6),
                         border_radius=20,
-                        bgcolor=ACCENT_VIOLET if activo else "#1A2133",
+                        bgcolor=ACCENT_VIOLET if activo else "#0F274A",
                         content=ft.Text(g, size=12,
-                                        color=ft.Colors.BLACK if activo else "#cccccc"),
+                                        color=ft.Colors.BLACK if activo else "#D5E0F5"),
                     ),
                 )
             )
@@ -186,7 +214,7 @@ def PerfilView(page: ft.Page, auth_controller):
     content_col = ft.Column(spacing=10)
 
     avatar_display_content = ft.Container(
-        width=90, height=90, border_radius=45, bgcolor="#1A2133",
+        width=90, height=90, border_radius=45, bgcolor="#0F274A",
         alignment=ft.Alignment(0, 0),
         border=ft.Border.all(2, ACCENT_VIOLET),
         content=ft.Text(inicial, size=28, color=ft.Colors.WHITE, font_family="Audiowide", weight="bold"),
@@ -200,11 +228,11 @@ def PerfilView(page: ft.Page, auth_controller):
 
     def fila(icon, label, value):
         return ft.Container(
-            padding=14, bgcolor=CARD_BG, border_radius=15, border=ft.Border.all(1, "#1A2133"),
+            padding=14, bgcolor=CARD_BG, border_radius=15, border=ft.Border.all(1, "#0F274A"),
             content=ft.Row(spacing=12, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=[
-                ft.Icon(icon, color="#888888", size=18),
+                ft.Icon(icon, color="#A8B8CE", size=18),
                 ft.Column(spacing=2, controls=[
-                    ft.Text(label, size=11, color="#888888"),
+                    ft.Text(label, size=11, color="#A8B8CE"),
                     ft.Text(str(value) if value else "—", size=14, color=ft.Colors.WHITE),
                 ]),
             ]),
@@ -215,16 +243,16 @@ def PerfilView(page: ft.Page, auth_controller):
         nombre_a = artista_sel[0].get("name", "") or user.get("favorite_artist", "")
         icono = ft.Image(src=img_url, width=40, height=40, border_radius=20, fit=ft.BoxFit.COVER) \
             if img_url else ft.Container(
-                width=40, height=40, border_radius=20, bgcolor="#333333",
+                width=40, height=40, border_radius=20, bgcolor="#0F1F33",
                 alignment=ft.Alignment(0, 0),
-                content=ft.Icon(ft.Icons.PERSON, color="#888888", size=20),
+                content=ft.Icon(ft.Icons.PERSON, color="#A8B8CE", size=20),
             )
         return ft.Container(
-            padding=14, bgcolor=CARD_BG, border_radius=15, border=ft.Border.all(1, "#1A2133"),
+            padding=14, bgcolor=CARD_BG, border_radius=15, border=ft.Border.all(1, "#0F274A"),
             content=ft.Row(spacing=12, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=[
                 icono,
                 ft.Column(spacing=2, controls=[
-                    ft.Text("Artista favorito", size=11, color="#888888"),
+                    ft.Text("Artista favorito", size=11, color="#A8B8CE"),
                     ft.Text(nombre_a or "—", size=14, color=ft.Colors.WHITE),
                 ]),
             ]),
@@ -247,7 +275,7 @@ def PerfilView(page: ft.Page, auth_controller):
             f_display,
             f_bio,
             # artista
-            ft.Text("Artista favorito", size=12, color="#888888"),
+            ft.Text("Artista favorito", size=12, color="#A8B8CE"),
             ft.Row(spacing=8, controls=[
                 ft.Container(expand=True, content=f_artist),
                 ft.IconButton(icon=ft.Icons.SEARCH, icon_color=ACCENT_VIOLET, 
@@ -256,13 +284,13 @@ def PerfilView(page: ft.Page, auth_controller):
             artista_resultados,
             ft.Container(
                 visible=bool(artista_sel[0].get("name")),
-                bgcolor="#1a1a1a", border_radius=10,
+                bgcolor="#10243C", border_radius=10,
                 padding=ft.Padding(left=12, right=12, top=8, bottom=8),
                 content=artista_preview_row,
             ),
             f_avatar_url, # Add avatar URL field here
             # género
-            ft.Text("Género favorito", size=12, color="#888888"),
+            ft.Text("Género favorito", size=12, color="#A8B8CE"),
             generos_chips,
             f_genre,
             ft.ElevatedButton(
@@ -310,35 +338,43 @@ def PerfilView(page: ft.Page, auth_controller):
             render_view()
         page.update()
 
-    async def volver(e):
-        await page.push_route("/home")
-
-    edit_btn = ft.IconButton(icon=ft.Icons.EDIT_OUTLINED, icon_color="#888888", on_click=toggle_edit)
+    edit_btn = ft.IconButton(icon=ft.Icons.EDIT_OUTLINED, icon_color="#A8B8CE", on_click=toggle_edit)
 
     render_avatar_display() # Initial render of avatar
     render_view()
+
+    def abrir_sidebar(e):
+        overlay.visible = True
+        sidebar_panel.visible = True
+        page.update()
+
+    def cerrar_sidebar(e):
+        overlay.visible = False
+        sidebar_panel.visible = False
+        page.update()
 
     return ft.View(
         route="/perfil",
         bgcolor=BG_COLOR,
         padding=0,
         controls=[
-            ft.Row([
-                sidebar,
-                ft.Container(
-                    expand=True,
-                    padding=40,
-                    content=ft.Column(
+            ft.Stack(expand=True, controls=[
+                ft.Column(expand=True, spacing=0, controls=[
+                    ft.Container(
+                        expand=True,
+                        padding=40,
+                        content=ft.Column(
                         scroll=ft.ScrollMode.AUTO,
                         spacing=0,
                         controls=[
                             ft.Row([
-                                ft.Text("CONFIGURACIÓN DE PERFIL", size=14, color="#555577", font_family="Audiowide"),
+                                ft.IconButton(icon=ft.Icons.MENU_ROUNDED, icon_color="#A8B8CE", on_click=abrir_sidebar),
+                                ft.Text("CONFIGURACIÓN DE PERFIL", size=14, color="#2C5D85", font_family="Audiowide"),
                                 ft.Container(expand=True),
                                 edit_btn,
                                 ft.IconButton(
                                     icon=ft.Icons.LOGOUT_ROUNDED, 
-                                    icon_color="#F472B6", 
+                                    icon_color="#FF7AB7", 
                                     on_click=lambda _: (page.borrar_sesion(), page.run_task(page.push_route, "/"))
                                 ),
                             ]),
@@ -349,7 +385,7 @@ def PerfilView(page: ft.Page, auth_controller):
                                 controls=[
                                     avatar_display_content, # Use the dynamic avatar content
                                     ft.Text(nombre, size=24, color=ft.Colors.WHITE, weight="bold"),
-                                    ft.Text(user.get("email", ""), size=12, color="#888888"),
+                                    ft.Text(user.get("email", ""), size=12, color="#A8B8CE"),
                                     ft.Container(height=10),
                                     ft.Row(
                                         alignment=ft.MainAxisAlignment.CENTER, spacing=24,
@@ -370,7 +406,10 @@ def PerfilView(page: ft.Page, auth_controller):
                             content_col,
                         ],
                     )
-                )
-            ], expand=True)
+                    )
+                ]),
+                overlay,
+                ft.Row(expand=True, spacing=0, controls=[sidebar_panel]),
+            ])
         ]
     )

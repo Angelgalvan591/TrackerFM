@@ -13,12 +13,12 @@ def RegistroView(page: ft.Page, auth_controller):
 
     s = dict(
         border_radius=10, filled=True,
-        fill_color="#1a1a1a",
-        border_color="#333333",
-        focused_border_color="#ffffff",
+        fill_color="#122B46",
+        border_color="transparent",
+        focused_border_color="#69A6FF",
         color=ft.Colors.WHITE,
         cursor_color=ft.Colors.WHITE,
-        label_style=ft.TextStyle(color="#888888"),
+        label_style=ft.TextStyle(color="#A8B8CE"),
     )
 
     fuerza_text = ft.Text("", size=11)
@@ -38,7 +38,7 @@ def RegistroView(page: ft.Page, auth_controller):
             fuerza_text.color = "#ffcc00"
         else:
             fuerza_text.value = "Fuerte 💪"
-            fuerza_text.color = "#1DB954"
+            fuerza_text.color = "#46D7FF"
         page.update()
 
     nombre = ft.TextField(label="Nombre", prefix_icon=ft.Icons.PERSON_OUTLINE, max_length=20, **s)
@@ -46,7 +46,7 @@ def RegistroView(page: ft.Page, auth_controller):
     contra = ft.TextField(
         label="Contraseña", prefix_icon=ft.Icons.LOCK_OUTLINE, password=True,
         max_length=8, on_change=evaluar_fuerza,
-        suffix=ft.IconButton(icon=ft.Icons.VISIBILITY_OUTLINED, icon_color="#888888", on_click=ver_contra),
+        suffix=ft.IconButton(icon=ft.Icons.VISIBILITY_OUTLINED, icon_color="#A8B8CE", on_click=ver_contra),
         **s,
     )
 
@@ -79,7 +79,7 @@ def RegistroView(page: ft.Page, auth_controller):
 
     return ft.View(
         route="/registro",
-        bgcolor="#0a0a0a",
+        bgcolor="#08131F",
         vertical_alignment=ft.MainAxisAlignment.CENTER,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         controls=[
@@ -87,16 +87,15 @@ def RegistroView(page: ft.Page, auth_controller):
                 width=360,
                 padding=ft.Padding(left=32, right=32, top=40, bottom=40),
                 border_radius=16,
-                bgcolor="#111111",
-                border=ft.Border(left=ft.BorderSide(1, "#222222"), right=ft.BorderSide(1, "#222222"), top=ft.BorderSide(1, "#222222"), bottom=ft.BorderSide(1, "#222222")),
+                bgcolor="#10243C",
                 content=ft.Column(
                     tight=True,
                     spacing=16,
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                     controls=[
                         ft.Text("Crear cuenta", size=26, color=ft.Colors.WHITE, font_family="Audiowide", weight="bold"),
-                        ft.Text("Únete a Tracker FM", size=13, color="#888888"),
-                        ft.Divider(height=8, color="#222222"),
+                        ft.Text("Únete a Tracker FM", size=13, color="#A8B8CE"),
+                        ft.Divider(height=8, color="#122B46"),
                         nombre,
                         correo,
                         contra,
@@ -112,7 +111,7 @@ def RegistroView(page: ft.Page, auth_controller):
                         ),
                         ft.TextButton(
                             "¿Ya tienes cuenta? Inicia sesión",
-                            style=ft.ButtonStyle(color="#888888"),
+                            style=ft.ButtonStyle(color="#A8B8CE"),
                             on_click=lambda _: page.run_task(page.push_route, "/"),
                         ),
                     ],

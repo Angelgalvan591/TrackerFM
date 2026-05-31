@@ -10,7 +10,64 @@ pygame.mixer.init()
 reproduciendo = [None]
 
 
+
 def BusquedaView(page: ft.Page):
+    def ir(ruta):
+        cerrar_sidebar(None)
+        page.run_task(page.push_route, ruta)
+
+    overlay = ft.GestureDetector(
+        visible=False, expand=True,
+        on_tap=lambda _: cerrar_sidebar(None),
+        content=ft.Container(expand=True, bgcolor="#00000099"),
+    )
+
+    def nav_item(icon, label, ruta):
+        return ft.TextButton(
+            content=ft.Row(spacing=14, controls=[
+                ft.Icon(icon, color="#D5E0F5", size=20),
+                ft.Text(label, size=14, color="#D5E0F5"),
+            ]),
+            style=ft.ButtonStyle(
+                overlay_color="#ffffff11",
+                shape=ft.RoundedRectangleBorder(radius=10),
+                padding=ft.Padding(left=16, right=16, top=12, bottom=12),
+            ),
+            on_click=lambda _, r=ruta: ir(r),
+        )
+
+    sidebar_panel = ft.Container(
+        visible=False, width=260, bgcolor="#0F1F33",
+        content=ft.Column(spacing=0, controls=[
+            ft.Container(
+                height=100, bgcolor="#10243C",
+                padding=ft.Padding(left=20, right=20, top=40, bottom=16),
+                content=ft.Text("TRACKER FM", size=16, color=ft.Colors.WHITE,
+                                font_family="Audiowide", weight="bold"),
+            ),
+            ft.Container(height=8),
+            ft.Container(
+                padding=ft.Padding(left=12, right=12, top=0, bottom=0),
+                content=ft.Column(spacing=2, controls=[
+                    nav_item(ft.Icons.HOME_OUTLINED,  "Home",    "/home"),
+                    nav_item(ft.Icons.SEARCH,         "Buscar",  "/busqueda"),
+                    nav_item(ft.Icons.PEOPLE_OUTLINE, "Usuarios",  "/usuarios"),
+                    nav_item(ft.Icons.HISTORY_ROUNDED, "Mi Actividad", "/actividad"),
+                    nav_item(ft.Icons.PERSON_OUTLINE, "Mi Perfil", "/perfil"),
+                ]),
+            ),
+        ]),
+    )
+
+    def abrir_sidebar(e):
+        overlay.visible = True
+        sidebar_panel.visible = True
+        page.update()
+
+    def cerrar_sidebar(e):
+        overlay.visible = False
+        sidebar_panel.visible = False
+        page.update()
 
     resultados = ft.Column(spacing=12, scroll=ft.ScrollMode.AUTO, expand=True)
     filtro = ["track"]
@@ -22,12 +79,12 @@ def BusquedaView(page: ft.Page):
         prefix_icon=ft.Icons.SEARCH,
         border_radius=16,
         filled=True,
-        fill_color="#111827",
-        border_color="#1A2133",
-        focused_border_color="#7C3AED",
+        fill_color="#10294E",
+        border_color="#0F274A",
+        focused_border_color="#6A98FF",
         color=ft.Colors.WHITE,
         cursor_color=ft.Colors.WHITE,
-        hint_style=ft.TextStyle(color="#888888"),
+        hint_style=ft.TextStyle(color="#A8B8CE"),
         expand=True,
     )
 
@@ -36,8 +93,8 @@ def BusquedaView(page: ft.Page):
         return ft.TextButton(
             label,
             style=ft.ButtonStyle(
-                color=ft.Colors.WHITE if activo else "#888888",
-                bgcolor="#7C3AED" if activo else "transparent",
+                color=ft.Colors.WHITE if activo else "#A8B8CE",
+                bgcolor="#6A98FF" if activo else "transparent",
                 shape=ft.RoundedRectangleBorder(radius=12),
                 padding=ft.Padding(left=16, right=16, top=6, bottom=6),
             ),
@@ -102,7 +159,7 @@ def BusquedaView(page: ft.Page):
 
         play_btn = ft.IconButton(
             icon=ft.Icons.PLAY_CIRCLE_OUTLINE,
-            icon_color="#1DB954",
+            icon_color="#46D7FF",
             icon_size=28,
             disabled=not preview,
         )
@@ -110,9 +167,9 @@ def BusquedaView(page: ft.Page):
             play_btn.on_click = lambda _, u=preview, b=play_btn: play_preview(u, b)
 
         return ft.Container(
-            bgcolor="#111827",
+            bgcolor="#10294E",
             border_radius=20,
-            border=ft.Border.all(1, "#1A2133"),
+            border=ft.Border.all(1, "#0F274A"),
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
             expand=True,
             content=ft.Column(
@@ -121,7 +178,7 @@ def BusquedaView(page: ft.Page):
                     ft.Stack(
                         controls=[
                             ft.Image(src=img_big, height=140, width=400, fit=ft.BoxFit.COVER) if img_big
-                            else ft.Container(height=140, bgcolor="#222222"),
+                            else ft.Container(height=140, bgcolor="#122B46"),
                             ft.Container(
                                 alignment=ft.Alignment(1, 1),
                                 padding=8,
@@ -136,7 +193,7 @@ def BusquedaView(page: ft.Page):
                                     max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                             ft.GestureDetector(
                                 on_tap=lambda _, n=artista_nombre: ir_artista(n, "/busqueda"),
-                                content=ft.Text(artista_nombre, size=12, color="#b3b3b3",
+                                content=ft.Text(artista_nombre, size=12, color="#C1CFEB",
                                                 max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                             ),
                         ]),
@@ -161,7 +218,7 @@ def BusquedaView(page: ft.Page):
         return ft.GestureDetector(
             on_tap=abrir_album,
             content=ft.Container(
-                bgcolor="#1E212E",
+                bgcolor="#122B46",
                 border_radius=16,
                 clip_behavior=ft.ClipBehavior.HARD_EDGE,
                 expand=True,
@@ -169,8 +226,8 @@ def BusquedaView(page: ft.Page):
                     spacing=0,
                     controls=[
                         ft.Image(src=img, height=140, width=400, fit=ft.BoxFit.COVER) if img
-                        else ft.Container(height=140, bgcolor="#222222",
-                                          content=ft.Icon(ft.Icons.ALBUM, color="#444444", size=48),
+                        else ft.Container(height=140, bgcolor="#122B46",
+                                          content=ft.Icon(ft.Icons.ALBUM, color="#1C4F7A", size=48),
                                           alignment=ft.Alignment(0, 0)),
                         ft.Container(
                             padding=ft.Padding(left=12, right=12, top=10, bottom=12),
@@ -179,12 +236,12 @@ def BusquedaView(page: ft.Page):
                                         max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                                 ft.GestureDetector(
                                     on_tap=lambda _, n=primer_artista: ir_artista(n, "/busqueda"),
-                                    content=ft.Text(artistas, size=12, color="#b3b3b3",
+                                    content=ft.Text(artistas, size=12, color="#C1CFEB",
                                                     max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                                 ),
                                 ft.Text(
                                     f"{year}  ·  {total_tracks} canciones" if total_tracks else year,
-                                    size=11, color="#777777",
+                                    size=11, color="#7F90A8",
                                 ),
                             ]),
                         ),
@@ -208,7 +265,7 @@ def BusquedaView(page: ft.Page):
         return ft.GestureDetector(
             on_tap=abrir,
             content=ft.Container(
-                bgcolor="#1E212E",
+                bgcolor="#122B46",
                 border_radius=16,
                 clip_behavior=ft.ClipBehavior.HARD_EDGE,
                 expand=True,
@@ -218,8 +275,8 @@ def BusquedaView(page: ft.Page):
                         ft.Stack(
                             controls=[
                                 ft.Image(src=img, height=140, width=400, fit=ft.BoxFit.COVER) if img
-                                else ft.Container(height=140, bgcolor="#222222",
-                                                  content=ft.Icon(ft.Icons.PERSON, color="#444444", size=56),
+                                else ft.Container(height=140, bgcolor="#122B46",
+                                                  content=ft.Icon(ft.Icons.PERSON, color="#1C4F7A", size=56),
                                                   alignment=ft.Alignment(0, 0)),
                                 ft.Container(
                                     height=140, expand=True,
@@ -236,7 +293,7 @@ def BusquedaView(page: ft.Page):
                                 ft.Text(item.get("name", ""), size=14, color=ft.Colors.WHITE, weight="bold",
                                         max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                                 ft.Text("Artista",
-                                    size=12, color="#888888",
+                                    size=12, color="#A8B8CE",
                                     max_lines=1, overflow=ft.TextOverflow.ELLIPSIS,
                                 ),
                             ]),
@@ -254,7 +311,7 @@ def BusquedaView(page: ft.Page):
         barra.disabled = True
         resultados.controls = [
             ft.Container(
-                content=ft.ProgressRing(width=30, height=30, stroke_width=3, color="#6C63FF"),
+                content=ft.ProgressRing(width=30, height=30, stroke_width=3, color="#69A6FF"),
                 padding=ft.Padding(top=50),
                 alignment=ft.Alignment(0, 0)
             )
@@ -269,7 +326,7 @@ def BusquedaView(page: ft.Page):
                 
                 new_controls = []
                 if not items:
-                    new_controls.append(ft.Text("Sin resultados", color="#888888"))
+                    new_controls.append(ft.Text("Sin resultados", color="#A8B8CE"))
                 elif tipo == "track":
                     for i in range(0, len(items), 2):
                         par = items[i:i + 2]
@@ -293,15 +350,10 @@ def BusquedaView(page: ft.Page):
                 resultados.controls = new_controls
             except Exception as ex:
                 print(f"Error en búsqueda: {ex}")
-                resultados.controls = [ft.Text(f"Error: {ex}", color="#ff4444")]
-            
-            # Restauramos la interfaz
+                    resultados.controls = [ft.Text("Ocurrió un error al buscar", color="#ff4444")]
             barra.disabled = False
-            page.update()
-            # Verificamos que sigamos en la vista de búsqueda antes de forzar el update del contenedor
-            if page.route == "/busqueda":
-                resultados.update()
-
+         f  da":
+                page.update() 
         threading.Thread(target=_buscar, daemon=True).start()
 
     barra.on_submit = hacer_busqueda
@@ -309,30 +361,33 @@ def BusquedaView(page: ft.Page):
 
     return ft.View(
         route="/busqueda",
-        bgcolor="#0F111A",
+        bgcolor="#08131F",
         padding=ft.Padding(left=20, right=20, top=20, bottom=20),
         controls=[
-            ft.Column(
-                expand=True,
-                spacing=0,
-                controls=[
-                    ft.Row(
-                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                        vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                        controls=[
-                            ft.IconButton(icon=ft.Icons.ARROW_BACK, icon_color="#888888",
-                                on_click=lambda _: page.run_task(page.push_route, "/home"), icon_size=24),
-                            ft.Text("Buscar", size=16, color=ft.Colors.WHITE, font_family="Audiowide"),
-                            ft.Container(width=40),
-                        ],
-                    ),
-                    ft.Container(height=20),
-                    ft.Row(controls=[barra]),
-                    ft.Container(height=10),
-                    filtros_row,
-                    ft.Container(height=10),
-                    ft.Container(expand=True, content=resultados),
-                ],
-            ),
+            ft.Stack(expand=True, controls=[
+                ft.Column(
+                    expand=True,
+                    spacing=0,
+                    controls=[
+                        ft.Row(
+                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                            controls=[
+                                ft.IconButton(icon=ft.Icons.MENU_ROUNDED, icon_color="#A8B8CE", on_click=abrir_sidebar),
+                                ft.Text("Buscar", size=16, color=ft.Colors.WHITE, font_family="Audiowide"),
+                                ft.Container(width=40),
+                            ],
+                        ),
+                        ft.Container(height=20),
+                        ft.Row(controls=[barra]),
+                        ft.Container(height=10),
+                        filtros_row,
+                        ft.Container(height=10),
+                        ft.Container(expand=True, content=resultados),
+                    ],
+                ),
+                overlay,
+                ft.Row(expand=True, spacing=0, controls=[sidebar_panel]),
+            ])
         ],
     )

@@ -2,8 +2,7 @@ import bcrypt
 import random
 import smtplib
 import os
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+from email.message import EmailMessage
 from datetime import datetime, timedelta
 from database.db import get_connection
 from dotenv import load_dotenv
@@ -76,18 +75,18 @@ class AuthController:
             if not mail_user or "tu_correo" in mail_user or not mail_pass:
                 print(f"[DEV] Codigo: {codigo}")
                 return True, user["id"], f"DEV:{codigo}"
-            msg = MIMEMultipart()
-            msg["Subject"] = "Recuperar contrasena - TrackerFM"
-            msg["From"]    = mail_user
-            msg["To"]      = email
-            msg.attach(MIMEText(
-                f"Tu codigo de recuperacion de TrackerFM es:\n\n{codigo}\n\nExpira en 10 minutos.",
-                "plain", "utf-8"
-            ))
-            # Usamos un contexto de tiempo de espera más corto y aseguramos el cierre
+
+            # Usamos EmailMessage que maneja UTF-8 (emojis 😎) automáticamente
+            msg = EmailMessage()
+            msg["Subject"] = "Recuperar contraseña 🔑 - TrackerFM"
+            msg["From"] = mail_user
+            msg["To"] = email
+            msg.set_content(f"Hola 😎,\n\nTu código de recuperación de TrackerFM es: {codigo}\n\nExpira en 10 minutos.")
+
             with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15) as s:
                 s.login(mail_user, mail_pass)
-                s.sendmail(mail_user, [email], msg.as_bytes())
+                s.send_message(msg)
+            
             print(f"Correo enviado exitosamente a {email}")
             return True, user["id"], "Codigo enviado al correo"
         except Exception as e:

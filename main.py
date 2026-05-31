@@ -12,6 +12,7 @@ from views.usuarios import UsuariosView
 from views.perfil_publico import PerfilPublicoView
 from views.perfil_artista import PerfilArtistaView
 from views.vista_album import VistaAlbumView
+from views.actividad import ActividadView
 from views.recuperar import RecuperarView
 from controllers.auth import AuthController
 
@@ -38,13 +39,13 @@ async def start(page: ft.Page):
     page.window.height = 844
     page.window.resizable = False
     page.window.title_bar_hidden = True
-    page.bgcolor = "#0F111A"
+    page.bgcolor = "#08131F"
     page.padding = 0
     page.fonts = {
         "Audiowide": "/Audiowide-Regular.ttf",
         "VT323": "/VT323-Regular.ttf",
     }
-    page.theme = ft.Theme(font_family="Audiowide", color_scheme_seed="#6C63FF")
+    page.theme = ft.Theme(font_family="Audiowide", color_scheme_seed="#69A6FF")
 
     auth_ctrl = AuthController()
     page.user_id = cargar_sesion()
@@ -73,6 +74,8 @@ async def start(page: ft.Page):
             page.views.append(PerfilArtistaView(page))
         elif page.route == "/vista_album":
             page.views.append(VistaAlbumView(page))
+        elif page.route == "/actividad":
+            page.views.append(ActividadView(page))
         elif page.route == "/recuperar":
             page.views.append(RecuperarView(page, auth_ctrl))
         else:
