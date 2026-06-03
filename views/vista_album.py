@@ -24,6 +24,26 @@ def VistaAlbumView(page: ft.Page):
     social   = SocialController()
     liked    = [social.is_album_liked(page.user_id, album_id) if album_id else False]
 
+    # registrar visita
+    def _registrar_visita():
+        if not album_id or not page.user_id:
+            return
+        try:
+            conn = get_connection()
+            cur = conn.cursor()
+            artist_name = artistas_list[0].get("name", "") if artistas_list else ""
+            cur.execute("""
+                INSERT INTO recently_viewed (user_id, album_id, album_title, cover_url, artist_name, viewed_at)
+                VALUES (%s, %s, %s, %s, %s, NOW())
+                ON DUPLICATE KEY UPDATE viewed_at = NOW(), album_title = VALUES(album_title),
+                cover_url = VALUES(cover_url), artist_name = VALUES(artist_name)
+            """, (page.user_id, album_id, nombre, img, artist_name))
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+    threading.Thread(target=_registrar_visita, daemon=True).start()
+
     like_btn = ft.IconButton(
         icon=ft.Icons.FAVORITE if liked[0] else ft.Icons.FAVORITE_BORDER,
         icon_color="#FF6370" if liked[0] else "#A8B8CE",
@@ -32,22 +52,41 @@ def VistaAlbumView(page: ft.Page):
     )
 
     def abrir_modal_resena(e):
-        rating_input = ft.Slider(min=1, max=5, divisions=4, label="{value} ★", value=5, active_color="#69A6FF")
+        rating = [5]
         comment_input = ft.TextField(label="¿Qué te pareció este álbum?", multiline=True, min_lines=3, border_color="#0F1F33")
+
+        estrellas = ft.Row(spacing=4)
+
+        def build_estrellas():
+            return [
+                ft.IconButton(
+                    icon=ft.Icons.STAR if i <= rating[0] else ft.Icons.STAR_BORDER,
+                    icon_color="#FFD700" if i <= rating[0] else "#A8B8CE",
+                    icon_size=32,
+                    on_click=lambda _, v=i: set_rating(v),
+                    padding=ft.Padding(0, 0, 0, 0),
+                ) for i in range(1, 6)
+            ]
+
+        def set_rating(v):
+            rating[0] = v
+            estrellas.controls = build_estrellas()
+            estrellas.update()
+
+        estrellas.controls = build_estrellas()
 
         def guardar_resena(_):
             if not album_id: return
             try:
                 conn = get_connection()
                 cursor = conn.cursor(dictionary=True)
-                # Asegurar que el álbum existe en la DB (ForeignKey constraint)
                 artist_id = artistas_list[0].get("id", "") if artistas_list else "0"
                 artist_name = artistas_list[0].get("name", "Desconocido") if artistas_list else "Desconocido"
-                
+
                 cursor.execute("SELECT id FROM artists WHERE id = %s", (artist_id,))
                 if not cursor.fetchone():
                     cursor.execute("INSERT INTO artists (id, name) VALUES (%s, %s)", (artist_id, artist_name))
-                
+
                 cursor.execute("SELECT id FROM albums WHERE id = %s", (album_id,))
                 if not cursor.fetchone():
                     rel_date = album.get("release_date") or (year + "-01-01" if year else None)
@@ -55,16 +94,15 @@ def VistaAlbumView(page: ft.Page):
                         "INSERT INTO albums (id, artist_id, title, cover_url, release_date, total_tracks) VALUES (%s, %s, %s, %s, %s, %s)",
                         (album_id, artist_id, nombre, img, rel_date, total or None)
                     )
-                
-                # Insertar o actualizar reseña
+
                 cursor.execute("DELETE FROM reviews WHERE user_id = %s AND album_id = %s", (page.user_id, album_id))
                 cursor.execute(
                     "INSERT INTO reviews (user_id, album_id, rating, review_text) VALUES (%s, %s, %s, %s)",
-                    (page.user_id, album_id, rating_input.value, comment_input.value)
+                    (page.user_id, album_id, rating[0], comment_input.value)
                 )
                 conn.commit()
                 conn.close()
-                page.overlay.remove(dlg)
+                dlg.open = False
                 page.snack_bar = ft.SnackBar(ft.Text("¡Reseña guardada!"), bgcolor="#46D7FF")
                 page.snack_bar.open = True
                 page.update()
@@ -76,11 +114,11 @@ def VistaAlbumView(page: ft.Page):
             title=ft.Text("Escribir Reseña", font_family="Audiowide", size=18),
             content=ft.Column([
                 ft.Text(f"Califica '{nombre}'", size=14, color="#A8B8CE"),
-                rating_input,
+                estrellas,
                 comment_input,
             ], tight=True, spacing=15),
             actions=[
-                ft.TextButton("Cancelar", on_click=lambda _: page.overlay.remove(dlg) or page.update()),
+                ft.TextButton("Cancelar", on_click=lambda _: setattr(dlg, "open", False) or page.update()),
                 ft.ElevatedButton("Publicar", bgcolor="#69A6FF", color="white", on_click=guardar_resena),
             ],
         )
@@ -88,19 +126,38 @@ def VistaAlbumView(page: ft.Page):
         dlg.open = True
         page.update()
 
-    def abrir_modal_resena_track(track):
+    def abrir_modal_resena_track(track, rating_inicial=5, texto_inicial=""):
         track_id = str(track.get("id", ""))
         track_title = track.get("title", "Canción")
-        rating_input = ft.Slider(min=1, max=5, divisions=4, label="{value} ★", value=5, active_color="#69A6FF")
-        comment_input = ft.TextField(label="¿Qué te pareció esta canción?", multiline=True, min_lines=3, border_color="#0F1F33")
+        rating = [rating_inicial]
+        comment_input = ft.TextField(label="¿Qué te pareció esta canción?", multiline=True, min_lines=3, border_color="#0F1F33", value=texto_inicial)
+
+        estrellas = ft.Row(spacing=4)
+
+        def build_estrellas():
+            return [
+                ft.IconButton(
+                    icon=ft.Icons.STAR if i <= rating[0] else ft.Icons.STAR_BORDER,
+                    icon_color="#FFD700" if i <= rating[0] else "#A8B8CE",
+                    icon_size=32,
+                    on_click=lambda _, v=i: set_rating(v),
+                    padding=ft.Padding(0, 0, 0, 0),
+                ) for i in range(1, 6)
+            ]
+
+        def set_rating(v):
+            rating[0] = v
+            estrellas.controls = build_estrellas()
+            estrellas.update()
+
+        estrellas.controls = build_estrellas()
 
         def guardar_resena_track(_):
             if not track_id or not album_id: return
             try:
                 conn = get_connection()
                 cursor = conn.cursor(dictionary=True)
-                
-                # Asegurar artista, album y track en DB antes de la reseña por integridad referencial
+
                 a_id = artistas_list[0].get("id", "0") if artistas_list else "0"
                 a_name = artistas_list[0].get("name", "Desconocido") if artistas_list else "Desconocido"
                 cursor.execute("SELECT id FROM artists WHERE id = %s", (a_id,))
@@ -123,15 +180,14 @@ def VistaAlbumView(page: ft.Page):
                         (track_id, album_id, track_title, duration, track.get("preview", ""))
                     )
 
-                # Insertar o actualizar reseña de canción
                 cursor.execute("DELETE FROM track_reviews WHERE user_id = %s AND track_id = %s", (page.user_id, track_id))
                 cursor.execute(
                     "INSERT INTO track_reviews (user_id, track_id, rating, review_text) VALUES (%s, %s, %s, %s)",
-                    (page.user_id, track_id, rating_input.value, comment_input.value)
+                    (page.user_id, track_id, rating[0], comment_input.value)
                 )
                 conn.commit()
                 conn.close()
-                page.overlay.remove(dlg)
+                dlg.open = False
                 page.snack_bar = ft.SnackBar(ft.Text(f"Reseña de '{track_title}' guardada"), bgcolor="#46D7FF")
                 page.snack_bar.open = True
                 page.update()
@@ -143,12 +199,88 @@ def VistaAlbumView(page: ft.Page):
             title=ft.Text("Reseñar Canción", font_family="Audiowide", size=18),
             content=ft.Column([
                 ft.Text(f"Calificando: {track_title}", size=14, color="#A8B8CE"),
-                rating_input,
+                estrellas,
                 comment_input,
             ], tight=True, spacing=15),
             actions=[
-                ft.TextButton("Cancelar", on_click=lambda _: page.overlay.remove(dlg) or page.update()),
+                ft.TextButton("Cancelar", on_click=lambda _: setattr(dlg, "open", False) or page.update()),
                 ft.ElevatedButton("Publicar", bgcolor="#69A6FF", color="white", on_click=guardar_resena_track),
+            ],
+        )
+        page.overlay.append(dlg)
+        dlg.open = True
+        page.update()
+
+    def ver_resena_track(track):
+        track_id = str(track.get("id", ""))
+        track_title = track.get("title", "Canción")
+
+        def cargar_resena():
+            try:
+                conn = get_connection()
+                cursor = conn.cursor(dictionary=True)
+                cursor.execute(
+                    "SELECT rating, review_text FROM track_reviews WHERE user_id = %s AND track_id = %s",
+                    (page.user_id, track_id)
+                )
+                row = cursor.fetchone()
+                conn.close()
+                return row
+            except:
+                return None
+
+        resena = cargar_resena()
+
+        if not resena:
+            page.snack_bar = ft.SnackBar(ft.Text("No tienes reseña para esta canción"), bgcolor="#122B46")
+            page.snack_bar.open = True
+            page.update()
+            return
+
+        estrellas_display = ft.Row(spacing=2, controls=[
+            ft.Icon(
+                ft.Icons.STAR if i <= resena["rating"] else ft.Icons.STAR_BORDER,
+                color="#FFD700" if i <= resena["rating"] else "#A8B8CE",
+                size=22,
+            ) for i in range(1, 6)
+        ])
+
+        def eliminar(_):
+            try:
+                conn = get_connection()
+                cursor = conn.cursor()
+                cursor.execute(
+                    "DELETE FROM track_reviews WHERE user_id = %s AND track_id = %s",
+                    (page.user_id, track_id)
+                )
+                conn.commit()
+                conn.close()
+                dlg.open = False
+                page.snack_bar = ft.SnackBar(ft.Text("Reseña eliminada"), bgcolor="#FF6370")
+                page.snack_bar.open = True
+                page.update()
+            except Exception as ex:
+                print(f"Error al eliminar: {ex}")
+
+        def editar(_):
+            dlg.open = False
+            page.update()
+            abrir_modal_resena_track(track, resena["rating"], resena["review_text"])
+
+        dlg = ft.AlertDialog(
+            bgcolor="#10294E",
+            title=ft.Text(track_title, font_family="Audiowide", size=16, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+            content=ft.Column([
+                estrellas_display,
+                ft.Text(
+                    resena["review_text"] or "Sin comentario",
+                    size=13, color="#D5E0F5",
+                ),
+            ], tight=True, spacing=12),
+            actions=[
+                ft.TextButton("Cerrar", on_click=lambda _: setattr(dlg, "open", False) or page.update()),
+                ft.TextButton("Eliminar", style=ft.ButtonStyle(color="#FF6370"), on_click=eliminar),
+                ft.ElevatedButton("Editar", bgcolor="#69A6FF", color="white", on_click=editar),
             ],
         )
         page.overlay.append(dlg)
@@ -237,7 +369,14 @@ def VistaAlbumView(page: ft.Page):
             icon_color="#A8B8CE",
             icon_size=18,
             tooltip="Reseñar canción",
-            on_click=lambda _: abrir_modal_resena_track(track)
+            on_click=lambda _, t=track: abrir_modal_resena_track(t)
+        )
+        ver_resena_btn = ft.IconButton(
+            icon=ft.Icons.COMMENT_OUTLINED,
+            icon_color="#69A6FF",
+            icon_size=18,
+            tooltip="Ver mi reseña",
+            on_click=lambda _, t=track: ver_resena_track(t)
         )
         if preview:
             play_btn.on_click = lambda _, u=preview, b=play_btn: play_preview(u, b)
@@ -254,6 +393,7 @@ def VistaAlbumView(page: ft.Page):
                             max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                 ]),
                 ft.Text(f"{mins}:{segs:02d}", size=11, color="#7F90A8"),
+                ver_resena_btn,
                 review_track_btn,
                 play_btn,
             ]),

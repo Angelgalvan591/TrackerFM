@@ -176,7 +176,7 @@ def PerfilView(page: ft.Page, auth_controller):
     threading.Thread(target=cargar_artista_actual, daemon=True).start()
 
     # ── género favorito ────────────────────────────────────────────────────
-    genero_sel = [user.get("favorite_genre", "")]
+    genero_sel = [user.get("favorite_genre") or ""]
     f_genre    = ft.TextField(
         label="O escribe uno personalizado",
         value=user.get("favorite_genre", ""), **s

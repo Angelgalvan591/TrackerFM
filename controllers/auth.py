@@ -7,7 +7,8 @@ from datetime import datetime, timedelta
 from database.db import get_connection
 from dotenv import load_dotenv
 
-load_dotenv()
+_ENV_PATH = os.path.join(os.path.dirname(__file__), "..", ".env")
+load_dotenv(dotenv_path=_ENV_PATH, override=True)
 
 
 class AuthController:
@@ -69,29 +70,33 @@ class AuthController:
                 return False, None, "No existe una cuenta con ese correo"
             codigo = self._generar_codigo()
             self._guardar_codigo(email, codigo)
-            load_dotenv(override=True)
             mail_user = (os.getenv("MAIL_USER") or "").strip()
             mail_pass = (os.getenv("MAIL_PASS") or "").strip().replace(" ", "")
             if not mail_user or "tu_correo" in mail_user or not mail_pass:
                 print(f"[DEV] Codigo: {codigo}")
                 return True, user["id"], f"DEV:{codigo}"
 
-            # Usamos EmailMessage que maneja UTF-8 (emojis 😎) automáticamente
             msg = EmailMessage()
-            msg["Subject"] = "Recuperar contraseña 🔑 - TrackerFM"
+            msg["Subject"] = "Recuperar contrasena - TrackerFM"
             msg["From"] = mail_user
             msg["To"] = email
-            msg.set_content(f"Hola 😎,\n\nTu código de recuperación de TrackerFM es: {codigo}\n\nExpira en 10 minutos.")
+            msg.set_content(f"Hola,\n\nTu codigo de recuperacion de TrackerFM es: {codigo}\n\nExpira en 10 minutos.", charset="utf-8")
 
-            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15) as s:
+            import sys
+            if sys.platform == "win32":
+                import io
+                sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15, local_hostname="localhost") as s:
                 s.login(mail_user, mail_pass)
                 s.send_message(msg)
-            
-            print(f"Correo enviado exitosamente a {email}")
+
+            print("Correo enviado exitosamente")
             return True, user["id"], "Codigo enviado al correo"
         except Exception as e:
-            print(f"Error SMTP: {e}")
-            return False, None, str(e)
+            import traceback
+            traceback.print_exc()
+            print(f"Error SMTP: {e}".encode("ascii", errors="replace").decode())
+            return False, None, str(e).encode("ascii", errors="replace").decode()
 
     def verificar_token(self, user_id, token):
         try:

@@ -20,12 +20,22 @@ def SplashView(page: ft.Page):
         controls=[
             ft.Column(
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                spacing=6,
+                spacing=0,
                 controls=[
-                    ft.Text("TRACKER", size=48, color=ft.Colors.WHITE, font_family="Audiowide", weight="bold"),
-                    ft.Text("FM", size=20, color="#C1CFEB", font_family="Audiowide"),
-                    ft.Container(height=30),
-                    ft.ProgressRing(width=20, height=20, stroke_width=2, color="#C1CFEB"),
+                    ft.Container(
+                        width=80, height=80, border_radius=40,
+                        bgcolor="#10243C",
+                        border=ft.Border.all(2, "#69A6FF"),
+                        alignment=ft.Alignment(0, 0),
+                        content=ft.Text("TR", size=36, color="#69A6FF", font_family="Audiowide", weight="bold"),
+                    ),
+                    ft.Container(height=20),
+                    ft.Text("TRACKER", size=42, color=ft.Colors.WHITE, font_family="Audiowide", weight="bold"),
+                    ft.Text("FM", size=18, color="#69A6FF", font_family="Audiowide"),
+                    ft.Container(height=8),
+                    ft.Text("tu música, tu historia", size=12, color="#4A6A8A", italic=True),
+                    ft.Container(height=40),
+                    ft.ProgressRing(width=18, height=18, stroke_width=2, color="#69A6FF"),
                 ],
             )
         ],

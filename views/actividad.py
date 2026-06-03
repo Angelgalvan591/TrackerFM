@@ -193,13 +193,42 @@ def ActividadView(page: ft.Page):
         ) for a in friends_activity
     ]
 
-    # Solución al error TypeError: Tab.__init__() got an unexpected keyword argument 'text'
-    t1 = ft.Tab(content=ft.Container(padding=20, content=resenas_list))
-    t1.text = "Reseñas"
-    t2 = ft.Tab(content=ft.Container(padding=20, content=likes_list))
-    t2.text = "Likes"
-    t3 = ft.Tab(content=ft.Container(padding=20, content=amigos_list))
-    t3.text = "Amigos"
+    tab_index = [0]
+    contenido_tabs = ft.Container(expand=True, padding=20, content=resenas_list)
+
+    def build_tab_btn(label, idx):
+        selected = tab_index[0] == idx
+        return ft.TextButton(
+            content=ft.Text(label, color=ACCENT if selected else "#2B5F81", size=14, weight="bold" if selected else None),
+            style=ft.ButtonStyle(
+                overlay_color="#ffffff11",
+                padding=ft.Padding(left=16, right=16, top=8, bottom=8),
+            ),
+            on_click=lambda _, i=idx: cambiar_tab(i),
+        )
+
+    tab_bar = ft.Row(spacing=0)
+
+    def render_tab_bar():
+        tab_bar.controls = [
+            build_tab_btn("Reseñas", 0),
+            build_tab_btn("Likes", 1),
+            build_tab_btn("Amigos", 2),
+        ]
+
+    def cambiar_tab(idx):
+        tab_index[0] = idx
+        if idx == 0:
+            contenido_tabs.content = resenas_list
+        elif idx == 1:
+            contenido_tabs.content = likes_list
+        else:
+            contenido_tabs.content = amigos_list
+        render_tab_bar()
+        tab_bar.update()
+        contenido_tabs.update()
+
+    render_tab_bar()
 
     return ft.View(
         route="/actividad",
@@ -219,14 +248,9 @@ def ActividadView(page: ft.Page):
                             ]
                         )
                     ),
-                    ft.Tabs(
-                        selected_index=0,
-                        expand=True,
-                        indicator_color=ACCENT,
-                        label_color=ACCENT,
-                        unselected_label_color="#2B5F81",
-                        tabs=[t1, t2, t3]
-                    )
+                    tab_bar,
+                    ft.Divider(height=1, color="#122B46"),
+                    contenido_tabs,
                 ]),
                 overlay,
                 ft.Row(expand=True, spacing=0, controls=[sidebar_panel]),

@@ -2,7 +2,7 @@ import flet as ft
 import threading
 import random
 from database.db import get_connection
-from controllers.deezer import buscar_deezer, get_album_details
+from controllers.deezer import buscar_deezer, get_album_details, get_chart_tracks
 
 # --- CONFIGURACIÓN ESTÉTICA ---
 BG_COLOR = "#08131F"
@@ -227,28 +227,241 @@ def HomeView(page: ft.Page):
                     page.run_task(page.push_route, "/vista_album")
 
                 carousel_row.controls.append(
-                    ft.Container(
-                        content=ft.Column([
-                            ft.Container(
-                                width=140, height=140, border_radius=10,
-                                image=ft.DecorationImage(
+                    ft.GestureDetector(
+                        on_tap=abrir_alb,
+                        content=ft.Container(
+                            bgcolor="#122B46",
+                            border_radius=14,
+                            border=ft.Border.all(1, "#1A3A5C"),
+                            clip_behavior=ft.ClipBehavior.HARD_EDGE,
+                            width=140,
+                            content=ft.Column(spacing=0, controls=[
+                                ft.Image(
                                     src=alb.get("cover_medium"),
+                                    width=140, height=140,
                                     fit=ft.BoxFit.COVER,
                                 ),
-                            ),
-                            ft.Text(alb.get("title", ""), size=11, weight="bold", color="white", max_lines=1, width=140)
-                        ], horizontal_alignment="center"),
-                        on_click=abrir_alb,
+                                ft.Container(
+                                    padding=ft.Padding(left=8, right=8, top=6, bottom=8),
+                                    content=ft.Column(spacing=2, controls=[
+                                        ft.Text(alb.get("title", ""), size=11, weight="bold",
+                                                color=ft.Colors.WHITE, max_lines=1,
+                                                overflow=ft.TextOverflow.ELLIPSIS),
+                                        ft.Text(alb.get("artist", {}).get("name", ""), size=10,
+                                                color="#69A6FF", max_lines=1,
+                                                overflow=ft.TextOverflow.ELLIPSIS),
+                                    ]),
+                                ),
+                            ]),
+                        ),
                     )
                 )
             page.update()
 
     threading.Thread(target=cargar_carousel, daemon=True).start()
 
+    # ── canciones al azar por géneros ───────────────────────────────────────────
+    GENEROS_QUERIES = [
+        ("Pop",        "pop hits"),
+        ("Rock",       "rock classic"),
+        ("Hip-Hop",    "hip hop rap"),
+        ("Electrónica","electronic dance"),
+        ("R&B",        "rnb soul"),
+        ("Reggaeton",  "reggaeton"),
+        ("Jazz",       "jazz"),
+        ("Metal",      "metal"),
+    ]
+
+    genero_activo = [GENEROS_QUERIES[0]]
+    para_ti_row = ft.Row(spacing=10, scroll=ft.ScrollMode.AUTO)
+    genero_chips_row = ft.Row(spacing=8, scroll=ft.ScrollMode.AUTO)
+
+    def cargar_para_ti(query):
+        para_ti_row.controls = [
+            ft.Container(
+                alignment=ft.Alignment(0, 0), width=60,
+                content=ft.ProgressRing(width=18, height=18, stroke_width=2, color=ACCENT_COLOR),
+            )
+        ]
+
+        def _fetch():
+            tracks = buscar_deezer(query, "track", limite=10)
+            random.shuffle(tracks)
+            controls = []
+            for t in tracks[:8]:
+                img = t.get("album", {}).get("cover_medium", "")
+                artista = t.get("artist", {}).get("name", "")
+
+                def abrir_album_track(_, track=t):
+                    alb = track.get("album", {})
+                    page.album_data = {
+                        "id": alb.get("id"),
+                        "name": alb.get("title"),
+                        "images": [{"url": alb.get("cover_xl") or alb.get("cover_big") or alb.get("cover_medium")}],
+                        "artist": track.get("artist", {}),
+                        "release_date": "",
+                        "total_tracks": "",
+                    }
+                    page.album_origen = "/home"
+                    page.run_task(page.push_route, "/vista_album")
+
+                controls.append(
+                    ft.GestureDetector(
+                        on_tap=abrir_album_track,
+                        content=ft.Container(
+                            width=120,
+                            bgcolor="#122B46",
+                            border_radius=12,
+                            border=ft.Border.all(1, "#1A3A5C"),
+                            clip_behavior=ft.ClipBehavior.HARD_EDGE,
+                            content=ft.Column(spacing=0, controls=[
+                                ft.Stack(controls=[
+                                    ft.Image(src=img, width=120, height=120, fit=ft.BoxFit.COVER) if img
+                                    else ft.Container(width=120, height=120, bgcolor="#0F1F33",
+                                                      content=ft.Icon(ft.Icons.MUSIC_NOTE, color="#1C4F7A", size=32),
+                                                      alignment=ft.Alignment(0, 0)),
+                                    ft.Container(
+                                        width=120, height=120,
+                                        gradient=ft.LinearGradient(
+                                            begin=ft.Alignment(0, 0), end=ft.Alignment(0, 1),
+                                            colors=["transparent", "#000000aa"],
+                                        ),
+                                    ),
+                                ]),
+                                ft.Container(
+                                    padding=ft.Padding(left=8, right=8, top=6, bottom=8),
+                                    content=ft.Column(spacing=2, controls=[
+                                        ft.Text(t.get("title", ""), size=11, weight="bold",
+                                                color=ft.Colors.WHITE, max_lines=1,
+                                                overflow=ft.TextOverflow.ELLIPSIS),
+                                        ft.Text(artista, size=10, color="#69A6FF",
+                                                max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                                    ]),
+                                ),
+                            ]),
+                        ),
+                    )
+                )
+            para_ti_row.controls = controls
+            page.update()
+        threading.Thread(target=_fetch, daemon=True).start()
+
+    def render_genero_chips():
+        genero_chips_row.controls = [
+            ft.GestureDetector(
+                on_tap=lambda _, g=g: seleccionar_genero(g),
+                content=ft.Container(
+                    padding=ft.Padding(left=14, right=14, top=6, bottom=6),
+                    border_radius=20,
+                    bgcolor=ACCENT_COLOR if g == genero_activo[0] else "#10294E",
+                    border=ft.Border.all(1, ACCENT_COLOR if g == genero_activo[0] else "#1A3A5C"),
+                    content=ft.Text(g[0], size=12,
+                                    color=ft.Colors.WHITE if g == genero_activo[0] else "#A8B8CE"),
+                ),
+            ) for g in GENEROS_QUERIES
+        ]
+
+    def seleccionar_genero(g):
+        genero_activo[0] = g
+        render_genero_chips()
+        genero_chips_row.update()
+        cargar_para_ti(g[1])
+
+    render_genero_chips()
+    cargar_para_ti(GENEROS_QUERIES[0][1])
+
+    # ── visitado recientemente ─────────────────────────────────────────────────────
+    recientes_row = ft.Row(spacing=10, scroll=ft.ScrollMode.AUTO)
+    recientes_seccion = ft.Column(spacing=10, visible=False, controls=[
+        ft.Text("Visitado recientemente", size=16, color=ft.Colors.WHITE, weight="bold"),
+        recientes_row,
+    ])
+
+    def cargar_recientes():
+        try:
+            conn = get_connection()
+            cur = conn.cursor(dictionary=True)
+            cur.execute("""
+                SELECT album_id, album_title, cover_url, artist_name
+                FROM recently_viewed
+                WHERE user_id = %s
+                ORDER BY viewed_at DESC
+                LIMIT 10
+            """, (page.user_id,))
+            rows = cur.fetchall()
+            conn.close()
+            if not rows:
+                return
+            controls = []
+            for r in rows:
+                def abrir(_, row=r):
+                    from controllers.deezer import get_album_details
+                    def _fetch():
+                        data = get_album_details(row["album_id"])
+                        page.album_data = {
+                            "id": data.get("id") or row["album_id"],
+                            "name": data.get("title") or row["album_title"],
+                            "images": [{"url": data.get("cover_xl") or data.get("cover_medium") or row["cover_url"]}],
+                            "artist": data.get("artist", {"name": row["artist_name"]}),
+                            "release_date": data.get("release_date", ""),
+                            "total_tracks": data.get("nb_tracks", ""),
+                        }
+                        page.album_origen = "/home"
+                        page.run_task(page.push_route, "/vista_album")
+                    threading.Thread(target=_fetch, daemon=True).start()
+
+                controls.append(
+                    ft.GestureDetector(
+                        on_tap=abrir,
+                        content=ft.Container(
+                            width=110,
+                            bgcolor="#122B46",
+                            border_radius=12,
+                            border=ft.Border.all(1, "#1A3A5C"),
+                            clip_behavior=ft.ClipBehavior.HARD_EDGE,
+                            content=ft.Column(spacing=0, controls=[
+                                ft.Image(src=r["cover_url"], width=110, height=110, fit=ft.BoxFit.COVER)
+                                if r["cover_url"] else
+                                ft.Container(width=110, height=110, bgcolor="#0F1F33",
+                                             content=ft.Icon(ft.Icons.ALBUM, color="#1C4F7A", size=32),
+                                             alignment=ft.Alignment(0, 0)),
+                                ft.Container(
+                                    padding=ft.Padding(left=7, right=7, top=5, bottom=7),
+                                    content=ft.Column(spacing=2, controls=[
+                                        ft.Text(r["album_title"] or "", size=11, weight="bold",
+                                                color=ft.Colors.WHITE, max_lines=1,
+                                                overflow=ft.TextOverflow.ELLIPSIS),
+                                        ft.Text(r["artist_name"] or "", size=10, color="#69A6FF",
+                                                max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                                    ]),
+                                ),
+                            ]),
+                        ),
+                    )
+                )
+            recientes_row.controls = controls
+            recientes_seccion.visible = True
+            page.update()
+        except Exception:
+            pass
+    threading.Thread(target=cargar_recientes, daemon=True).start()
+
+    # ── nombre del usuario para saludo ──────────────────────────────────
+    nombre_usuario = [""]
+    try:
+        conn = get_connection()
+        cur = conn.cursor(dictionary=True)
+        cur.execute("SELECT display_name, username FROM users WHERE id = %s", (page.user_id,))
+        row = cur.fetchone()
+        conn.close()
+        nombre_usuario[0] = (row.get("display_name") or row.get("username") or "") if row else ""
+    except Exception:
+        pass
+
     # ── top bar ────────────────────────────────────────────────────────────
     top_bar = ft.Container(
         padding=ft.Padding(bottom=5),
-        content=ft.Column([
+        content=ft.Column(spacing=4, controls=[
             ft.Row(
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -259,7 +472,11 @@ def HomeView(page: ft.Page):
                                   on_click=lambda _: page.run_task(page.push_route, "/busqueda")),
                 ],
             ),
-            ft.Divider(height=1, color="#122B46")
+            ft.Text(
+                f"Hola, {nombre_usuario[0]} 👋" if nombre_usuario[0] else "",
+                size=13, color="#4A6A8A",
+            ),
+            ft.Divider(height=1, color="#122B46"),
         ])
     )
 
@@ -269,6 +486,13 @@ def HomeView(page: ft.Page):
             ft.Column([
                 ft.Text("Descubrir", size=22, color=ft.Colors.WHITE, weight="bold"),
                 carousel_row,
+            ], spacing=10),
+            recientes_seccion,
+            ft.Column([
+                ft.Text("Para ti", size=16, color=ft.Colors.WHITE, weight="bold"),
+                ft.Text("Canciones de géneros diversos", size=12, color="#4A6A8A"),
+                genero_chips_row,
+                para_ti_row,
             ], spacing=10),
             ft.Column([
                 ft.Text("Tu actividad reciente", size=16, color="#A8B8CE", weight="w500"),

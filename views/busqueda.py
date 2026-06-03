@@ -69,7 +69,21 @@ def BusquedaView(page: ft.Page):
         sidebar_panel.visible = False
         page.update()
 
-    resultados = ft.Column(spacing=12, scroll=ft.ScrollMode.AUTO, expand=True)
+    resultados = ft.Column(spacing=12, scroll=ft.ScrollMode.AUTO, expand=True, controls=[
+        ft.Container(
+            alignment=ft.Alignment(0, 0),
+            padding=ft.Padding(top=40, left=0, right=0, bottom=0),
+            content=ft.Column(
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=10,
+                controls=[
+                    ft.Icon(ft.Icons.MUSIC_NOTE, color="#1A3A5C", size=52),
+                    ft.Text("Busca canciones, álbumes o artistas", size=13, color="#2B5F81",
+                            text_align=ft.TextAlign.CENTER),
+                ],
+            ),
+        )
+    ])
     filtro = ["track"]
     tipos = ["track", "album", "artist"]
     labels = ["Canciones", "Álbumes", "Artistas"]
@@ -91,12 +105,12 @@ def BusquedaView(page: ft.Page):
     def btn_filtro(label, tipo):
         activo = tipo == filtro[0]
         return ft.TextButton(
-            label,
+            content=ft.Text(label, color=ft.Colors.WHITE if activo else "#A8B8CE", size=13, weight="bold" if activo else None),
             style=ft.ButtonStyle(
-                color=ft.Colors.WHITE if activo else "#A8B8CE",
-                bgcolor="#6A98FF" if activo else "transparent",
+                bgcolor="#6A98FF" if activo else "#10294E",
                 shape=ft.RoundedRectangleBorder(radius=12),
                 padding=ft.Padding(left=16, right=16, top=6, bottom=6),
+                overlay_color="#ffffff11",
             ),
             on_click=lambda _, t=tipo: cambiar_filtro(t),
         )
