@@ -6,10 +6,15 @@ def ResenaCancionView(page: ft.Page):
     track = getattr(page, "track_data", {})
     origen = getattr(page, "track_origen", "/busqueda")
     
-    track_id = track.get("id", "")
-    titulo = track.get("title", "Canción")
-    artista = track.get("artist", {}).get("name", "Artista")
-    cover = track.get("album", {}).get("cover_medium", "")
+    track_id = str(track.get("id", ""))
+    titulo = track.get("title", "Cancion")
+    artista_obj = track.get("artist", {})
+    artista = artista_obj.get("name", "Artista")
+    artista_id = artista_obj.get("id", "")
+    album_obj = track.get("album", {})
+    cover = album_obj.get("cover_medium", "")
+    album_id = str(album_obj.get("id", "")) if album_obj.get("id") else ""
+    album_title = album_obj.get("title", "")
     
     # Obtener reseña existente del usuario
     mi_resena = get_user_track_review(page.user_id, track_id) if page.user_id and track_id else None
@@ -55,7 +60,8 @@ def ResenaCancionView(page: ft.Page):
             return
         guardar_track_review(
             page.user_id, track_id, titulo, artista, cover,
-            rating_ref[0], txt_resena.value or ""
+            rating_ref[0], txt_resena.value or "",
+            album_id=album_id, album_title=album_title, artist_id=artista_id
         )
         page.run_task(page.push_route, origen)
     

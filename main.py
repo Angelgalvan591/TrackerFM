@@ -26,7 +26,8 @@ def guardar_sesion(user_id):
 def cargar_sesion():
     if os.path.exists(SESSION_FILE):
         with open(SESSION_FILE) as f:
-            return json.load(f).get("user_id")
+            uid = json.load(f).get("user_id")
+            return uid if uid else None
     return None
 
 def borrar_sesion():
@@ -94,6 +95,12 @@ async def start(page: ft.Page):
             page.update()
             await page.push_route(page.views[-1].route)
 
+    def window_event(e):
+        if e.data == "close":
+            page.window.destroy()
+
+    page.window.prevent_close = True
+    page.on_window_event = window_event
     page.on_route_change = route_change
     page.on_view_pop = view_pop
     await page.push_route("/splash")
