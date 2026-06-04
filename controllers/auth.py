@@ -80,7 +80,16 @@ class AuthController:
             msg["Subject"] = "Recuperar contrasena - TrackerFM"
             msg["From"] = mail_user
             msg["To"] = email
-            msg.set_content(f"Hola,\n\nTu codigo de recuperacion de TrackerFM es: {codigo}\n\nExpira en 10 minutos.", charset="utf-8")
+            msg.set_content(
+                f"Hola,\n\n"
+                f"Recibimos una solicitud para restablecer la contrasena de tu cuenta en TrackerFM, "
+                f"tu diario musical personal.\n\n"
+                f"Tu codigo de verificacion es:\n\n"
+                f"    {codigo}\n\n"
+                f"Este codigo expira en 10 minutos. Si no solicitaste esto, ignora este mensaje y tu cuenta seguira segura.\n\n"
+                f"-- El equipo de TrackerFM",
+                charset="utf-8"
+            )
 
             import sys
             if sys.platform == "win32":

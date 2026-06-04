@@ -82,22 +82,30 @@ def ActividadView(page: ft.Page):
             conn = get_connection()
             cur = conn.cursor(dictionary=True)
             
-            # Cargar Reseñas Reales
+            # Cargar Reseñas Reales (álbumes + canciones)
             cur.execute("""
-                SELECT r.review_text as comment, r.rating, a.title, ar.name as artist, a.cover_url as img
+                SELECT r.review_text as comment, r.rating, a.title, ar.name as artist, a.cover_url as img, r.created_at
                 FROM reviews r
                 JOIN albums a ON r.album_id = a.id
                 JOIN artists ar ON a.artist_id = ar.id
-                WHERE r.user_id = %s ORDER BY r.created_at DESC
-            """, (page.user_id,))
+                WHERE r.user_id = %s
+                UNION ALL
+                SELECT tr.review_text as comment, tr.rating, t.title, ar.name as artist, a.cover_url as img, tr.created_at
+                FROM track_reviews tr
+                JOIN tracks t ON tr.track_id = t.id
+                JOIN albums a ON t.album_id = a.id
+                LEFT JOIN artists ar ON a.artist_id = ar.id
+                WHERE tr.user_id = %s
+                ORDER BY created_at DESC
+            """, (page.user_id, page.user_id))
             reviews_db = cur.fetchall()
             
             # Cargar Likes Reales
             cur.execute("""
-                SELECT a.title, ar.name as artist, a.cover_url as img
+                SELECT a.title, COALESCE(ar.name, 'Artista desconocido') as artist, a.cover_url as img
                 FROM favorite_albums fa
                 JOIN albums a ON fa.album_id = a.id
-                JOIN artists ar ON a.artist_id = ar.id
+                LEFT JOIN artists ar ON a.artist_id = ar.id
                 WHERE fa.user_id = %s ORDER BY fa.created_at DESC
             """, (page.user_id,))
             likes_db = cur.fetchall()

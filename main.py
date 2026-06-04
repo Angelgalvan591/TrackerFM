@@ -37,9 +37,12 @@ def borrar_sesion():
 async def start(page: ft.Page):
     page.title = "TrackerFM"
     page.window.width = 390
-    page.window.height = 844
+    page.window.height = 880
+    page.window.min_width = 390
+    page.window.max_width = 390
     page.window.resizable = False
-    page.window.title_bar_hidden = True
+    page.window.title_bar_hidden = False
+    page.window.title_bar_buttons_hidden = False
     page.bgcolor = "#08131F"
     page.padding = 0
     page.fonts = {

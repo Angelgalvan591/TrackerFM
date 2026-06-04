@@ -13,16 +13,27 @@ def _get_ultima_resena(user_id):
         conn = get_connection()
         cur = conn.cursor(dictionary=True)
         cur.execute("""
-            SELECT r.rating, r.review_text, r.created_at,
-                   a.id as album_id, a.title as album_title, a.cover_url,
-                   ar.name as artist_name
-            FROM reviews r
-            JOIN albums a ON r.album_id = a.id
-            LEFT JOIN artists ar ON a.artist_id = ar.id
-            WHERE r.user_id = %s
-            ORDER BY r.created_at DESC
+            SELECT rating, review_text, created_at, album_id, album_title, cover_url, artist_name FROM (
+                SELECT r.rating, r.review_text, r.created_at,
+                       a.id as album_id, a.title as album_title, a.cover_url,
+                       ar.name as artist_name
+                FROM reviews r
+                JOIN albums a ON r.album_id = a.id
+                LEFT JOIN artists ar ON a.artist_id = ar.id
+                WHERE r.user_id = %s
+                UNION ALL
+                SELECT tr.rating, tr.review_text, tr.created_at,
+                       a.id as album_id, t.title as album_title, a.cover_url,
+                       ar.name as artist_name
+                FROM track_reviews tr
+                JOIN tracks t ON tr.track_id = t.id
+                JOIN albums a ON t.album_id = a.id
+                LEFT JOIN artists ar ON a.artist_id = ar.id
+                WHERE tr.user_id = %s
+            ) AS combined
+            ORDER BY created_at DESC
             LIMIT 1
-        """, (user_id,))
+        """, (user_id, user_id))
         row = cur.fetchone()
         conn.close()
         return row

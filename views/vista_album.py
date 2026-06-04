@@ -158,27 +158,31 @@ def VistaAlbumView(page: ft.Page):
                 conn = get_connection()
                 cursor = conn.cursor(dictionary=True)
 
-                a_id = artistas_list[0].get("id", "0") if artistas_list else "0"
+                a_id = str(artistas_list[0].get("id", "")) if artistas_list else ""
                 a_name = artistas_list[0].get("name", "Desconocido") if artistas_list else "Desconocido"
-                cursor.execute("SELECT id FROM artists WHERE id = %s", (a_id,))
-                if not cursor.fetchone():
-                    cursor.execute("INSERT INTO artists (id, name) VALUES (%s, %s)", (a_id, a_name))
 
-                cursor.execute("SELECT id FROM albums WHERE id = %s", (album_id,))
-                if not cursor.fetchone():
-                    rel_date = album.get("release_date") or (year + "-01-01" if year else None)
+                if a_id:
                     cursor.execute(
-                        "INSERT INTO albums (id, artist_id, title, cover_url, release_date, total_tracks) VALUES (%s, %s, %s, %s, %s, %s)",
-                        (album_id, a_id, nombre, img, rel_date, total or None)
+                        "INSERT INTO artists (id, name) VALUES (%s, %s) ON DUPLICATE KEY UPDATE name=VALUES(name)",
+                        (a_id, a_name)
                     )
 
-                cursor.execute("SELECT id FROM tracks WHERE id = %s", (track_id,))
-                if not cursor.fetchone():
-                    duration = track.get("duration", 0) * 1000
-                    cursor.execute(
-                        "INSERT INTO tracks (id, album_id, title, duration_ms, preview_url) VALUES (%s, %s, %s, %s, %s)",
-                        (track_id, album_id, track_title, duration, track.get("preview", ""))
-                    )
+                cursor.execute(
+                    """INSERT INTO albums (id, artist_id, title, cover_url, release_date, total_tracks)
+                       VALUES (%s, %s, %s, %s, %s, %s)
+                       ON DUPLICATE KEY UPDATE cover_url=COALESCE(VALUES(cover_url), cover_url),
+                       artist_id=COALESCE(VALUES(artist_id), artist_id)""",
+                    (album_id, a_id or None, nombre, img,
+                     album.get("release_date") or (year + "-01-01" if year else None), total or None)
+                )
+
+                cursor.execute(
+                    """INSERT INTO tracks (id, album_id, title, duration_ms, preview_url)
+                       VALUES (%s, %s, %s, %s, %s)
+                       ON DUPLICATE KEY UPDATE title=VALUES(title)""",
+                    (track_id, album_id, track_title,
+                     track.get("duration", 0) * 1000, track.get("preview", ""))
+                )
 
                 cursor.execute("DELETE FROM track_reviews WHERE user_id = %s AND track_id = %s", (page.user_id, track_id))
                 cursor.execute(
@@ -188,11 +192,14 @@ def VistaAlbumView(page: ft.Page):
                 conn.commit()
                 conn.close()
                 dlg.open = False
-                page.snack_bar = ft.SnackBar(ft.Text(f"Reseña de '{track_title}' guardada"), bgcolor="#46D7FF")
+                page.snack_bar = ft.SnackBar(ft.Text(f"Resena de '{track_title}' guardada"), bgcolor="#46D7FF")
                 page.snack_bar.open = True
                 page.update()
             except Exception as ex:
-                print(f"Error al reseñar canción: {ex}")
+                print(f"Error al resenar cancion: {ex}")
+                page.snack_bar = ft.SnackBar(ft.Text(f"Error: {ex}"), bgcolor="#FF6370")
+                page.snack_bar.open = True
+                page.update()
 
         dlg = ft.AlertDialog(
             bgcolor="#10294E",

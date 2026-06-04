@@ -93,9 +93,14 @@ class SocialController:
                     "INSERT IGNORE INTO artists (id, name) VALUES (%s, %s)",
                     (artist_id, artist_name)
                 )
-            # insertar album si no existe
+            # insertar album si no existe, actualizar cover/artist si ya existe
             cursor.execute(
-                "INSERT IGNORE INTO albums (id, artist_id, title, cover_url, release_date, total_tracks) VALUES (%s, %s, %s, %s, %s, %s)",
+                """INSERT INTO albums (id, artist_id, title, cover_url, release_date, total_tracks)
+                   VALUES (%s, %s, %s, %s, %s, %s)
+                   ON DUPLICATE KEY UPDATE
+                   cover_url = COALESCE(VALUES(cover_url), cover_url),
+                   artist_id = COALESCE(VALUES(artist_id), artist_id),
+                   title = COALESCE(VALUES(title), title)""",
                 (album_id, artist_id or None, album_title, cover_url, release_date or None, total_tracks or None)
             )
             cursor.execute(
