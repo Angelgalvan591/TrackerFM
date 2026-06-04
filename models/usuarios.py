@@ -2,15 +2,32 @@ import bcrypt
 from database.db import get_connection
 
 
-def guardar_track_review(user_id, track_id, track_title, artist_name, cover_url, rating, texto):
+def guardar_track_review(user_id, track_id, track_title, artist_name, cover_url, rating, texto, album_id=None, album_title=None, artist_id=None):
     conn = get_connection()
     cursor = conn.cursor()
-    # Insertar canción si no existe
+
+    if artist_id:
+        cursor.execute(
+            "INSERT INTO artists (id, name) VALUES (%s, %s) ON DUPLICATE KEY UPDATE name=VALUES(name)",
+            (str(artist_id), artist_name or "")
+        )
+
+    if album_id:
+        cursor.execute(
+            """INSERT INTO albums (id, artist_id, title, cover_url)
+               VALUES (%s, %s, %s, %s)
+               ON DUPLICATE KEY UPDATE cover_url=COALESCE(VALUES(cover_url), cover_url),
+               artist_id=COALESCE(VALUES(artist_id), artist_id)""",
+            (str(album_id), str(artist_id) if artist_id else None, album_title or "", cover_url or "")
+        )
+
     cursor.execute(
-        "INSERT IGNORE INTO tracks (id, title, preview_url) VALUES (%s, %s, NULL)",
-        (str(track_id), track_title)
+        """INSERT INTO tracks (id, album_id, title, preview_url)
+           VALUES (%s, %s, %s, NULL)
+           ON DUPLICATE KEY UPDATE album_id=COALESCE(VALUES(album_id), album_id), title=VALUES(title)""",
+        (str(track_id), str(album_id) if album_id else None, track_title)
     )
-    # Insertar o actualizar reseña
+
     cursor.execute(
         """
         INSERT INTO track_reviews (user_id, track_id, rating, review_text)

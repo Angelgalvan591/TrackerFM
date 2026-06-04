@@ -79,6 +79,7 @@ def ActividadView(page: ft.Page):
 
     def cargar_datos():
         try:
+            print(f"[DEBUG] Cargando datos para user_id: {page.user_id}")
             conn = get_connection()
             cur = conn.cursor(dictionary=True)
             
@@ -90,10 +91,10 @@ def ActividadView(page: ft.Page):
                 JOIN artists ar ON a.artist_id = ar.id
                 WHERE r.user_id = %s
                 UNION ALL
-                SELECT tr.review_text as comment, tr.rating, t.title, ar.name as artist, a.cover_url as img, tr.created_at
+                SELECT tr.review_text as comment, tr.rating, t.title, COALESCE(ar.name, 'Artista desconocido') as artist, COALESCE(a.cover_url, '') as img, tr.created_at
                 FROM track_reviews tr
                 JOIN tracks t ON tr.track_id = t.id
-                JOIN albums a ON t.album_id = a.id
+                LEFT JOIN albums a ON t.album_id = a.id
                 LEFT JOIN artists ar ON a.artist_id = ar.id
                 WHERE tr.user_id = %s
                 ORDER BY created_at DESC
@@ -111,6 +112,7 @@ def ActividadView(page: ft.Page):
             likes_db = cur.fetchall()
             conn.close()
 
+            print(f"[DEBUG] reviews: {len(reviews_db)}, likes: {len(likes_db)}")
             resenas_list.controls = [
                 create_card(r["title"], r["artist"], extra_info=f"{'★'*int(r['rating'])} 💬 {r['comment']}", image_url=r["img"]) 
                 for r in reviews_db
@@ -124,11 +126,10 @@ def ActividadView(page: ft.Page):
             resenas_list.update()
             likes_list.update()
             page.update()
-        except Exception:
-            pass
+        except Exception as ex:
+            print(f"Error cargar_datos: {ex}")
 
-    if page.user_id:
-        threading.Thread(target=cargar_datos, daemon=True).start()
+    threading.Thread(target=cargar_datos, daemon=True).start()
     
     friends_activity = [
         {"user": "Andre", "title": "Borderline", "artist": "Tame Impala", "img": "https://e-cdns-images.dzcdn.net/images/cover/6c66687076a0b16259f9725f0a3592f6/250x250-000000-80-0-0.jpg", "preview": "https://cdns-preview-d.dzcdn.net/stream/c-d698e5967072481ec6544a4962c45300-4.mp3"},
