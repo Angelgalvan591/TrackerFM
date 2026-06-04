@@ -3,10 +3,10 @@ import requests
 BASE = "https://api.deezer.com"
 
 
-def buscar_deezer(query, tipo="track", limite=10):
+def buscar_deezer(query, tipo="track", limite=20):
     try:
         endpoint = f"/search/{tipo}" if tipo in ["artist", "album"] else "/search"
-        r = requests.get(f"{BASE}{endpoint}", params={"q": query, "limit": limite})
+        r = requests.get(f"{BASE}{endpoint}", params={"q": query, "limit": limite}, timeout=6)
         return r.json().get("data", [])
     except Exception:
         return []

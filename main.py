@@ -14,6 +14,7 @@ from views.perfil_artista import PerfilArtistaView
 from views.vista_album import VistaAlbumView
 from views.actividad import ActividadView
 from views.recuperar import RecuperarView
+from views.resena_cancion import ResenaCancionView
 from controllers.auth import AuthController
 
 SESSION_FILE = os.path.join(os.path.dirname(__file__), ".session")
@@ -78,6 +79,8 @@ async def start(page: ft.Page):
             page.views.append(ActividadView(page))
         elif page.route == "/recuperar":
             page.views.append(RecuperarView(page, auth_ctrl))
+        elif page.route == "/resena_cancion":
+            page.views.append(ResenaCancionView(page))
         else:
             page.views.append(LoginView(page, auth_ctrl))
         page.update()

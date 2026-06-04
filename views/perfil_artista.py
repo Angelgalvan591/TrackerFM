@@ -63,7 +63,7 @@ def PerfilArtistaView(page: ft.Page):
         threading.Thread(target=_play, daemon=True).start()
 
     def track_row(i, track):
-        preview   = track.get("preview_url", "")
+        preview   = track.get("preview", "") or track.get("preview_url", "")
         track_img = track.get("album", {}).get("cover_medium", "")
         play_btn  = ft.IconButton(
             icon=ft.Icons.PLAY_CIRCLE_OUTLINE, icon_color="#69A6FF", icon_size=24,
@@ -183,12 +183,15 @@ def PerfilArtistaView(page: ft.Page):
     header = ft.Stack(
         height=280,
         controls=[
-            ft.Image(src=img, width=400, height=280, fit=ft.BoxFit.COVER) if img
-            else ft.Container(width=400, height=280, bgcolor="#10243C",
-                              content=ft.Icon(ft.Icons.PERSON, color="#2B5F81", size=80),
-                              alignment=ft.Alignment(0, 0)),
             ft.Container(
-                width=400, height=280,
+                expand=True, height=280,
+                image=ft.DecorationImage(src=img, fit=ft.BoxFit.COVER) if img else None,
+                bgcolor="#10243C" if not img else None,
+                content=ft.Icon(ft.Icons.PERSON, color="#2B5F81", size=80) if not img else None,
+                alignment=ft.Alignment(0, 0),
+            ),
+            ft.Container(
+                expand=True, height=280,
                 gradient=ft.LinearGradient(
                     begin=ft.Alignment(0, -1), end=ft.Alignment(0, 1),
                     colors=["#00000066", "transparent", "#08131F"],

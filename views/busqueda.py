@@ -164,6 +164,11 @@ def BusquedaView(page: ft.Page):
             page.run_task(page.push_route, "/perfil_artista")
         threading.Thread(target=_buscar, daemon=True).start()
 
+    def abrir_track(track):
+        page.track_data = track
+        page.track_origen = "/busqueda"
+        page.run_task(page.push_route, "/resena_cancion")
+
     def card_track(item):
         artista_obj = item.get("artist") or {}
         artista_nombre = artista_obj.get("name", "Artista desconocido")
@@ -180,7 +185,17 @@ def BusquedaView(page: ft.Page):
         if preview:
             play_btn.on_click = lambda _, u=preview, b=play_btn: play_preview(u, b)
 
-        return ft.Container(
+        review_btn = ft.IconButton(
+            icon=ft.Icons.RATE_REVIEW_OUTLINED,
+            icon_color="#A8B8CE",
+            icon_size=22,
+            tooltip="Ver reseñas",
+            on_click=lambda _, t=item: abrir_track(t),
+        )
+
+        return ft.GestureDetector(
+            on_tap=lambda _, t=item: abrir_track(t),
+            content=ft.Container(
             bgcolor="#10294E",
             border_radius=20,
             border=ft.Border.all(1, "#0F274A"),
@@ -191,30 +206,39 @@ def BusquedaView(page: ft.Page):
                 controls=[
                     ft.Stack(
                         controls=[
-                            ft.Image(src=img_big, height=140, width=400, fit=ft.BoxFit.COVER) if img_big
-                            else ft.Container(height=140, bgcolor="#122B46"),
+                            ft.Image(src=img_big, height=200, expand=True, fit=ft.BoxFit.COVER) if img_big
+                            else ft.Container(height=200, bgcolor="#122B46",
+                                content=ft.Icon(ft.Icons.MUSIC_NOTE, color="#1C4F7A", size=64),
+                                alignment=ft.Alignment(0, 0)),
+                            ft.Container(
+                                height=200, expand=True,
+                                gradient=ft.LinearGradient(
+                                    begin=ft.Alignment(0, 0), end=ft.Alignment(0, 1),
+                                    colors=["transparent", "#000000bb"],
+                                ),
+                            ),
                             ft.Container(
                                 alignment=ft.Alignment(1, 1),
-                                padding=8,
-                                content=play_btn,
+                                padding=10,
+                                content=ft.Row(spacing=6, controls=[review_btn, play_btn]),
                             ),
                         ],
                     ),
                     ft.Container(
-                        padding=ft.Padding(left=12, right=12, top=10, bottom=12),
-                        content=ft.Column(spacing=3, controls=[
-                            ft.Text(item.get("title") or item.get("name", "Sin título"), size=14, color=ft.Colors.WHITE, weight=ft.FontWeight.W_600,
+                        padding=ft.Padding(left=14, right=14, top=12, bottom=14),
+                        content=ft.Column(spacing=4, controls=[
+                            ft.Text(item.get("title") or item.get("name", "Sin título"), size=16, color=ft.Colors.WHITE, weight=ft.FontWeight.W_600,
                                     max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                             ft.GestureDetector(
                                 on_tap=lambda _, n=artista_nombre: ir_artista(n, "/busqueda"),
-                                content=ft.Text(artista_nombre, size=12, color="#C1CFEB",
+                                content=ft.Text(artista_nombre, size=13, color="#C1CFEB",
                                                 max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                             ),
                         ]),
                     ),
                 ],
             ),
-        )
+        ))
 
     def card_album(item):
         artista_obj = item.get("artist") or {}
@@ -239,23 +263,34 @@ def BusquedaView(page: ft.Page):
                 content=ft.Column(
                     spacing=0,
                     controls=[
-                        ft.Image(src=img, height=140, width=400, fit=ft.BoxFit.COVER) if img
-                        else ft.Container(height=140, bgcolor="#122B46",
-                                          content=ft.Icon(ft.Icons.ALBUM, color="#1C4F7A", size=48),
-                                          alignment=ft.Alignment(0, 0)),
+                        ft.Stack(
+                            controls=[
+                                ft.Image(src=img, height=200, expand=True, fit=ft.BoxFit.COVER) if img
+                                else ft.Container(height=200, bgcolor="#122B46",
+                                                  content=ft.Icon(ft.Icons.ALBUM, color="#1C4F7A", size=64),
+                                                  alignment=ft.Alignment(0, 0)),
+                                ft.Container(
+                                    height=200, expand=True,
+                                    gradient=ft.LinearGradient(
+                                        begin=ft.Alignment(0, 0), end=ft.Alignment(0, 1),
+                                        colors=["transparent", "#000000bb"],
+                                    ),
+                                ),
+                            ],
+                        ),
                         ft.Container(
-                            padding=ft.Padding(left=12, right=12, top=10, bottom=12),
-                            content=ft.Column(spacing=3, controls=[
-                                ft.Text(item.get("title") or item.get("name", "Sin título"), size=14, color=ft.Colors.WHITE, weight=ft.FontWeight.W_600,
+                            padding=ft.Padding(left=14, right=14, top=12, bottom=14),
+                            content=ft.Column(spacing=4, controls=[
+                                ft.Text(item.get("title") or item.get("name", "Sin título"), size=16, color=ft.Colors.WHITE, weight=ft.FontWeight.W_600,
                                         max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                                 ft.GestureDetector(
                                     on_tap=lambda _, n=primer_artista: ir_artista(n, "/busqueda"),
-                                    content=ft.Text(artistas, size=12, color="#C1CFEB",
+                                    content=ft.Text(artistas, size=13, color="#C1CFEB",
                                                     max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                                 ),
                                 ft.Text(
                                     f"{year}  ·  {total_tracks} canciones" if total_tracks else year,
-                                    size=11, color="#7F90A8",
+                                    size=12, color="#7F90A8",
                                 ),
                             ]),
                         ),
@@ -288,12 +323,12 @@ def BusquedaView(page: ft.Page):
                     controls=[
                         ft.Stack(
                             controls=[
-                                ft.Image(src=img, height=140, width=400, fit=ft.BoxFit.COVER) if img
-                                else ft.Container(height=140, bgcolor="#122B46",
-                                                  content=ft.Icon(ft.Icons.PERSON, color="#1C4F7A", size=56),
+                                ft.Image(src=img, height=200, expand=True, fit=ft.BoxFit.COVER) if img
+                                else ft.Container(height=200, bgcolor="#122B46",
+                                                  content=ft.Icon(ft.Icons.PERSON, color="#1C4F7A", size=80),
                                                   alignment=ft.Alignment(0, 0)),
                                 ft.Container(
-                                    height=140, width=400,
+                                    height=200, expand=True,
                                     gradient=ft.LinearGradient(
                                         begin=ft.Alignment(0, 0), end=ft.Alignment(0, 1),
                                         colors=["transparent", "#000000cc"],
@@ -302,14 +337,11 @@ def BusquedaView(page: ft.Page):
                             ],
                         ),
                         ft.Container(
-                            padding=ft.Padding(left=12, right=12, top=12, bottom=12),
-                            content=ft.Column(spacing=2, controls=[
-                                ft.Text(item.get("name", ""), size=14, color=ft.Colors.WHITE, weight="bold",
+                            padding=ft.Padding(left=14, right=14, top=12, bottom=14),
+                            content=ft.Column(spacing=4, controls=[
+                                ft.Text(item.get("name", ""), size=16, color=ft.Colors.WHITE, weight="bold",
                                         max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
-                                ft.Text("Artista",
-                                    size=12, color="#A8B8CE",
-                                    max_lines=1, overflow=ft.TextOverflow.ELLIPSIS,
-                                ),
+                                ft.Text("Artista", size=13, color="#A8B8CE"),
                             ]),
                         ),
                     ],
@@ -342,29 +374,16 @@ def BusquedaView(page: ft.Page):
                 if not items:
                     new_controls.append(ft.Text("Sin resultados", color="#A8B8CE"))
                 elif tipo == "track":
-                    for i in range(0, len(items), 2):
-                        par = items[i:i + 2]
-                        row_controls = [card_track(par[0])]
-                        if len(par) == 2:
-                            row_controls.append(card_track(par[1]))
-                        else:
-                            row_controls.append(ft.Container(expand=True))
-                        new_controls.append(ft.Row(spacing=12, controls=row_controls))
+                    new_controls = [card_track(i) for i in items]
+                elif tipo == "album":
+                    new_controls = [card_album(i) for i in items]
                 else:
-                    fn = card_album if tipo == "album" else card_artist
-                    for i in range(0, len(items), 2):
-                        par = items[i:i + 2]
-                        row_controls = [fn(par[0])]
-                        if len(par) == 2:
-                            row_controls.append(fn(par[1]))
-                        else:
-                            row_controls.append(ft.Container(expand=True))
-                        new_controls.append(ft.Row(spacing=12, controls=row_controls))
+                    new_controls = [card_artist(i) for i in items]
                 
                 resultados.controls = new_controls
             except Exception as ex:
-                print(f"Error en búsqueda: {ex}")
-                resultados.controls = [ft.Text("Ocurrió un error al buscar", color="#ff4444")]
+                print(f"Error en b\u00fasqueda: {ex}")
+                resultados.controls = [ft.Text("Ocurri\u00f3 un error al buscar", color="#ff4444")]
             
             barra.disabled = False
             page.update()
