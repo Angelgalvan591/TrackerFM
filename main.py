@@ -66,9 +66,11 @@ async def start(page: ft.Page):
     page.theme = ft.Theme(font_family="Audiowide", color_scheme_seed="#69A6FF")
 
     auth_ctrl = AuthController()
-    page.user_id = cargar_sesion()
     page.guardar_sesion = guardar_sesion
     page.borrar_sesion = borrar_sesion
+    # Siempre arrancar sin sesión para forzar login
+    borrar_sesion()
+    page.user_id = None
 
     async def route_change(e):
         if pygame.mixer.get_init() and pygame.mixer.music.get_busy():
