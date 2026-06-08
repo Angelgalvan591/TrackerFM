@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from src.database.db import get_connection
 from dotenv import load_dotenv
 
-_ENV_PATH = os.path.join(os.path.dirname(__file__), "..", ".env")
+_ENV_PATH = os.path.join(os.path.dirname(__file__), "..", "..", ".env")
 load_dotenv(dotenv_path=_ENV_PATH, override=True)
 
 

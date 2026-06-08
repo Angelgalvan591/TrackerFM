@@ -131,7 +131,7 @@ def PerfilView(page: ft.Page, auth_controller):
         page.update()
 
     def buscar_artista(e):
-        q = f_artist.value.strip()
+        q = (f_artist.value or "").strip()
         if not q:
             return
         artista_resultados.controls = [
@@ -314,8 +314,8 @@ def PerfilView(page: ft.Page, auth_controller):
         ]
 
     def guardar(e):
-        nombre_artista = f_artist.value.strip() or artista_sel[0].get("name", "")
-        genero_final   = f_genre.value.strip() or genero_sel[0]
+        nombre_artista = (f_artist.value or "").strip() or artista_sel[0].get("name", "")
+        genero_final   = (f_genre.value or "").strip() or genero_sel[0]
         try:
             conn = get_connection()
             cursor = conn.cursor()
