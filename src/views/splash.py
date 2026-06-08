@@ -6,8 +6,11 @@ import threading
 def SplashView(page: ft.Page):
 
     def esperar_y_navegar():
-        time.sleep(2)
-        destino = "/home" if getattr(page, "user_id", None) else "/"
+        time.sleep(1.0)
+        # Verificación explícita contra None
+        uid = getattr(page, "user_id", None)
+        # Si el ID es 0 o None, mejor mandar al login para estar seguros
+        destino = "/home" if (uid is not None and uid != 0) else "/"
         page.run_task(page.push_route, destino)
 
     threading.Thread(target=esperar_y_navegar, daemon=True).start()

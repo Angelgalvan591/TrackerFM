@@ -1,4 +1,4 @@
-from TrackerFM.src.database.db import get_connection
+from src.database.db import get_connection
 
 
 class SocialController:

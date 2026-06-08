@@ -3,9 +3,9 @@ import pygame
 import requests
 import threading
 import io
-from TrackerFM.src.controllers.social import SocialController
-from TrackerFM.src.database.db import get_connection
-from TrackerFM.src.controllers.deezer import get_album_details
+from src.controllers.social import SocialController
+from src.database.db import get_connection
+from src.controllers.deezer import get_album_details
 
 reproduciendo = [None]
 
@@ -26,7 +26,7 @@ def VistaAlbumView(page: ft.Page):
 
     # registrar visita
     def _registrar_visita():
-        if not album_id or not page.user_id:
+        if not album_id or page.user_id is None:
             return
         try:
             conn = get_connection()

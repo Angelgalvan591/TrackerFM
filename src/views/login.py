@@ -29,7 +29,7 @@ def LoginView(page: ft.Page, auth_controller):
         **s,
     )
 
-    async def login_click(e):
+    async def login_click(e):        
         correo.error_text = None
         contra.error_text = None
         error = False
@@ -42,10 +42,16 @@ def LoginView(page: ft.Page, auth_controller):
         if error:
             page.update()
             return
-        user, msg = auth_controller.login(correo.value, contra.value)
+            
+        user, msg = auth_controller.login(correo.value.strip(), contra.value)
         if user:
-            page.user_id = user["id"]
-            page.guardar_sesion(user["id"])
+            # 1. Asignar ID fresco
+            nuevo_id = int(user["id"])
+            page.user_id = nuevo_id
+            # 2. Guardar en disco inmediatamente
+            page.guardar_sesion(nuevo_id)
+            # 3. Navegar al Home
+            page.update()
             await page.push_route("/home")
         else:
             mostrar_error(msg)

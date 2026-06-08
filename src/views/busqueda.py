@@ -3,8 +3,8 @@ import pygame
 import requests
 import threading
 import io
-from TrackerFM.src.controllers.deezer import buscar_deezer
-from TrackerFM.src.controllers.deezer import get_artist_details
+from src.controllers.deezer import buscar_deezer
+from src.controllers.deezer import get_artist_details
 
 pygame.mixer.init()
 reproduciendo = [None]

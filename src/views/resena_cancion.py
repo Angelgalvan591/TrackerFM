@@ -1,5 +1,5 @@
 import flet as ft
-from TrackerFM.src.models.usuarios import guardar_track_review, get_track_reviews, get_user_track_review
+from src.models.usuarios import guardar_track_review, get_track_reviews, get_user_track_review
 
 
 def ResenaCancionView(page: ft.Page):

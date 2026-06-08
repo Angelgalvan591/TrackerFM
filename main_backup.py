@@ -34,7 +34,7 @@ def cargar_sesion():
             with open(SESSION_FILE) as f:
                 data = json.load(f)
                 uid = data.get("user_id")
-                return uid if uid is not None else None
+                return uid if uid else None
     except Exception as e:
         print(f"Error cargando sesión: {e}")
     return None
@@ -74,67 +74,61 @@ async def start(page: ft.Page):
         if pygame.mixer.get_init() and pygame.mixer.music.get_busy():
             pygame.mixer.music.stop()
         page.views.clear()
-            
+        page.user_id = cargar_sesion()
+        print(f"[ROUTE_CHANGE] route={page.route}, user_id={page.user_id}")
+        
         if page.route == "/splash":
             page.views.append(SplashView(page))
         elif page.route == "/registro":
             page.views.append(RegistroView(page, auth_ctrl))
         elif page.route == "/home":
-            if page.user_id is None:
+            if not page.user_id:
                 await page.push_route("/")
             else:
                 page.views.append(HomeView(page))
         elif page.route == "/perfil":
-            if page.user_id is None:
+            if not page.user_id:
                 await page.push_route("/")
             else:
                 page.views.append(PerfilView(page, auth_ctrl))
         elif page.route == "/busqueda":
-            if page.user_id is None:
+            if not page.user_id:
                 await page.push_route("/")
             else:
                 page.views.append(BusquedaView(page))
         elif page.route == "/usuarios":
-            if page.user_id is None:
+            if not page.user_id:
                 await page.push_route("/")
             else:
                 page.views.append(UsuariosView(page))
         elif page.route == "/perfil_publico":
-            if page.user_id is None:
+            if not page.user_id:
                 await page.push_route("/")
             else:
                 page.views.append(PerfilPublicoView(page))
         elif page.route == "/perfil_artista":
-            if page.user_id is None:
+            if not page.user_id:
                 await page.push_route("/")
             else:
                 page.views.append(PerfilArtistaView(page))
         elif page.route == "/vista_album":
-            if page.user_id is None:
+            if not page.user_id:
                 await page.push_route("/")
             else:
                 page.views.append(VistaAlbumView(page))
         elif page.route == "/actividad":
-            if page.user_id is None:
+            if not page.user_id:
                 await page.push_route("/")
             else:
                 page.views.append(ActividadView(page))
         elif page.route == "/recuperar":
             page.views.append(RecuperarView(page, auth_ctrl))
         elif page.route == "/resena_cancion":
-            if page.user_id is None:
+            if not page.user_id:
                 await page.push_route("/")
             else:
                 page.views.append(ResenaCancionView(page))
-        elif page.route == "/":
-            # Al llegar al login, BORRAMOS todo rastro de sesión previa
-            borrar_sesion()
-            page.user_id = None
-            page.views.append(LoginView(page, auth_ctrl))
         else:
-            # Por seguridad, si no hay ruta y no hay user, al login y limpiamos
-            if page.user_id is None:
-                borrar_sesion()
             page.views.append(LoginView(page, auth_ctrl))
         page.update()
 
@@ -144,6 +138,12 @@ async def start(page: ft.Page):
             page.update()
             await page.push_route(page.views[-1].route)
 
+    def window_event(e):
+        if e.data == "close":
+            page.window.destroy()
+
+    page.window.prevent_close = True
+    page.on_window_event = window_event
     page.on_route_change = route_change
     page.on_view_pop = view_pop
     await page.push_route("/splash")

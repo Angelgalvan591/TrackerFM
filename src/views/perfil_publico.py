@@ -1,5 +1,5 @@
 import flet as ft
-from TrackerFM.src.controllers.social import SocialController
+from src.controllers.social import SocialController
 
 
 def PerfilPublicoView(page: ft.Page):

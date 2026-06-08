@@ -70,7 +70,7 @@ def RegistroView(page: ft.Page, auth_controller):
         if error:
             page.update()
             return
-        ok, msg = auth_controller.registrar(nombre.value, correo.value, contra.value)
+        ok, msg = auth_controller.registrar(nombre.value, correo.value.strip(), contra.value)
         if ok:
             await page.push_route("/")
         else:

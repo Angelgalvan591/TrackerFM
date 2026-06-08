@@ -3,7 +3,7 @@ import pygame
 import requests
 import threading
 import io
-from TrackerFM.src.database.db import get_connection
+from src.database.db import get_connection
 
 pygame.mixer.init()
 reproduciendo = [None]

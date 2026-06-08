@@ -1,8 +1,8 @@
 import flet as ft
 import threading
 import random
-from TrackerFM.src.database.db import get_connection
-from TrackerFM.src.controllers.deezer import buscar_deezer, get_album_details, get_chart_tracks
+from src.database.db import get_connection
+from src.controllers.deezer import buscar_deezer, get_album_details, get_chart_tracks
 
 # --- CONFIGURACIÓN ESTÉTICA ---
 BG_COLOR = "#08131F"
@@ -48,8 +48,12 @@ def HomeView(page: ft.Page):
         page.run_task(page.push_route, ruta)
 
     async def cerrar_sesion(e):
-        page.user_id = None
+        print(f"[LOGOUT] Limpiando sesion del usuario {page.user_id}")
+        # Borrar sesión primero
         page.borrar_sesion()
+        # Asegurar que page.user_id se establezca a None después de borrar
+        page.user_id = None
+        page.update()
         await page.push_route("/")
 
     # ── LÓGICA DE LA SIDEBAR UNIFICADA ─────────────────────────────────────
@@ -406,7 +410,7 @@ def HomeView(page: ft.Page):
             controls = []
             for r in rows:
                 def abrir(_, row=r):
-                    from TrackerFM.src.controllers.deezer import get_album_details
+                    from src.controllers.deezer import get_album_details
                     def _fetch():
                         data = get_album_details(row["album_id"])
                         page.album_data = {
@@ -458,16 +462,30 @@ def HomeView(page: ft.Page):
     threading.Thread(target=cargar_recientes, daemon=True).start()
 
     # ── nombre del usuario para saludo ──────────────────────────────────
-    nombre_usuario = [""]
-    try:
-        conn = get_connection()
-        cur = conn.cursor(dictionary=True)
-        cur.execute("SELECT display_name, username FROM users WHERE id = %s", (page.user_id,))
-        row = cur.fetchone()
-        conn.close()
-        nombre_usuario[0] = (row.get("display_name") or row.get("username") or "") if row else ""
-    except Exception:
-        pass
+    nombre_usuario_text = ft.Text("Hola 👋", size=13, color="#4A6A8A")
+    
+    def cargar_nombre_usuario():
+        try:
+            user_id = page.user_id
+            if user_id is not None:
+                conn = get_connection()
+                cur = conn.cursor(dictionary=True)
+                cur.execute("SELECT display_name, username FROM users WHERE id = %s", (user_id,))
+                row = cur.fetchone()
+                conn.close()
+                if row:
+                    nombre = (row.get("display_name") or row.get("username") or "Usuario")
+                    nombre_usuario_text.value = f"Hola, {nombre} 👋"
+                    page.update()
+            else:
+                print("[HOME] user_id es None")
+        except Exception as e:
+            print(f"[HOME] Error cargando nombre de usuario: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    # Cargar nombre de usuario al iniciar
+    threading.Thread(target=cargar_nombre_usuario, daemon=True).start()
 
     # ── top bar ────────────────────────────────────────────────────────────
     top_bar = ft.Container(
@@ -483,10 +501,7 @@ def HomeView(page: ft.Page):
                                   on_click=lambda _: page.run_task(page.push_route, "/busqueda")),
                 ],
             ),
-            ft.Text(
-                f"Hola, {nombre_usuario[0]} 👋" if nombre_usuario[0] else "",
-                size=13, color="#4A6A8A",
-            ),
+            nombre_usuario_text,
             ft.Divider(height=1, color="#122B46"),
         ])
     )

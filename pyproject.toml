@@ -17,7 +17,7 @@ dependencies = [
 app = "main:main"
 
 [tool.uv]
-package = false
+package = true
 
 [tool.setuptools.packages.find]
 include = ["*"]

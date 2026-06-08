@@ -4,7 +4,7 @@ import smtplib
 import os
 from email.message import EmailMessage
 from datetime import datetime, timedelta
-from TrackerFM.src.database.db import get_connection
+from src.database.db import get_connection
 from dotenv import load_dotenv
 
 _ENV_PATH = os.path.join(os.path.dirname(__file__), "..", ".env")
@@ -17,6 +17,7 @@ class AuthController:
         try:
             conn = get_connection()
             cursor = conn.cursor(dictionary=True)
+            email = email.strip()
             cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
             if cursor.fetchone():
                 return False, "El correo ya está registrado"
@@ -35,6 +36,7 @@ class AuthController:
         try:
             conn = get_connection()
             cursor = conn.cursor(dictionary=True)
+            email = email.strip()
             cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
             user = cursor.fetchone()
             conn.close()

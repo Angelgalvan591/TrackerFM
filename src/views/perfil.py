@@ -1,8 +1,8 @@
 import flet as ft
 import threading
-from TrackerFM.src.database.db import get_connection
-from TrackerFM.src.controllers.social import SocialController
-from TrackerFM.src.controllers.deezer import buscar_deezer
+from src.database.db import get_connection
+from src.controllers.social import SocialController
+from src.controllers.deezer import buscar_deezer
 
 GENEROS = [
     "Pop", "Rock", "Hip-Hop", "Trap", "R&B", "Soul", "Jazz", "Blues",
@@ -19,18 +19,30 @@ def PerfilView(page: ft.Page, auth_controller):
     BG_COLOR = "#0B1020"
     CARD_BG = "#10294E"
 
-    user = {}
-    try:
-        conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM users WHERE id = %s", (page.user_id,))
-        user = cursor.fetchone() or {}
-        conn.close()
-    except Exception:
-        pass
+    async def cerrar_sesion(e):
+        print(f"[LOGOUT] Cerrando sesión del ID: {page.user_id}")
+        page.borrar_sesion()
+        page.user_id = None
+        page.update()
+        await page.push_route("/")
 
-    nombre  = user.get("display_name") or user.get("username", "Usuario")
-    inicial = nombre[0].upper()
+    user = {}
+    user_id = page.user_id  # Asegurar que se use el user_id actual
+    try:
+        if user_id is not None:
+            conn = get_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+            user = cursor.fetchone() or {}
+            conn.close()
+        else:
+            print(f"[ADVERTENCIA] user_id es None en PerfilView")
+    except Exception as e:
+        print(f"Error cargando usuario: {e}")
+
+    nombre  = user.get("display_name") or user.get("username") or "Usuario"
+    email   = user.get("email") or "Sin correo"
+    inicial = nombre[0].upper() if nombre else "U"
 
     social         = SocialController()
     seguidores     = social.get_seguidores(page.user_id)
@@ -375,7 +387,7 @@ def PerfilView(page: ft.Page, auth_controller):
                                 ft.IconButton(
                                     icon=ft.Icons.LOGOUT_ROUNDED, 
                                     icon_color="#FF7AB7", 
-                                    on_click=lambda _: (page.borrar_sesion(), page.run_task(page.push_route, "/"))
+                                    on_click=cerrar_sesion
                                 ),
                             ]),
                             ft.Container(height=30),
@@ -385,7 +397,7 @@ def PerfilView(page: ft.Page, auth_controller):
                                 controls=[
                                     avatar_display_content, # Use the dynamic avatar content
                                     ft.Text(nombre, size=24, color=ft.Colors.WHITE, weight="bold"),
-                                    ft.Text(user.get("email", ""), size=12, color="#A8B8CE"),
+                                    ft.Text(email, size=12, color="#A8B8CE"),
                                     ft.Container(height=10),
                                     ft.Row(
                                         alignment=ft.MainAxisAlignment.CENTER, spacing=24,

@@ -3,7 +3,7 @@ import pygame
 import requests
 import threading
 import io
-from TrackerFM.src.controllers.deezer import get_artist_top_tracks, get_artist_albums, get_artist_details, get_album_details
+from src.controllers.deezer import get_artist_top_tracks, get_artist_albums, get_artist_details, get_album_details
 
 reproduciendo = [None]
 
