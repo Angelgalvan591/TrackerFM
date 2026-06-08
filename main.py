@@ -2,20 +2,20 @@ import flet as ft
 import json
 import os
 import pygame
-from views.login import LoginView
-from views.registro import RegistroView
-from views.home import HomeView
-from views.splash import SplashView
-from views.perfil import PerfilView
-from views.busqueda import BusquedaView
-from views.usuarios import UsuariosView
-from views.perfil_publico import PerfilPublicoView
-from views.perfil_artista import PerfilArtistaView
-from views.vista_album import VistaAlbumView
-from views.actividad import ActividadView
-from views.recuperar import RecuperarView
-from views.resena_cancion import ResenaCancionView
-from controllers.auth import AuthController
+from TrackerFM.src.views.login import LoginView
+from TrackerFM.src.views.registro import RegistroView
+from TrackerFM.src.views.home import HomeView
+from TrackerFM.src.views.splash import SplashView
+from TrackerFM.src.views.perfil import PerfilView
+from TrackerFM.src.views.busqueda import BusquedaView
+from TrackerFM.src.views.usuarios import UsuariosView
+from TrackerFM.src.views.perfil_publico import PerfilPublicoView
+from TrackerFM.src.views.perfil_artista import PerfilArtistaView
+from TrackerFM.src.views.vista_album import VistaAlbumView
+from TrackerFM.src.views.actividad import ActividadView
+from TrackerFM.src.views.recuperar import RecuperarView
+from TrackerFM.src.views.resena_cancion import ResenaCancionView
+from TrackerFM.src.controllers.auth import AuthController
 
 SESSION_FILE = os.path.join(os.path.dirname(__file__), ".session")
 
